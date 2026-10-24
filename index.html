@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Galerie Vidéo</title>
+    <style>
+        /* --- STYLE GÉNÉRAL (Thème sombre cinéma) --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0f0f0f;
+            color: #ffffff;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* --- LECTEUR PRINCIPAL --- */
+        .main-player {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: 80vh; /* Ne dépasse pas la hauteur de l'écran */
+        }
+        .video-info {
+            padding: 15px 20px;
+            background: #1a1a1a;
+        }
+        .video-info h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* --- LISTE DES VIDÉOS (Grille responsive) --- */
+        .video-list-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #aaa;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        /* --- VIGNETTE INDIVIDUELLE --- */
+        .video-item {
+            background: #1a1a1a;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            border: 2px solid transparent;
+        }
+        .video-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+            border-color: #0088cc; /* Couleur de survol */
+        }
+        .video-item.active {
+            border-color: #0088cc;
+            background: #252525;
+        }
+        .video-item img {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            display: block;
+        }
+        .video-item .title {
+            padding: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #ddd;
+        }
+        .video-item.active .title {
+            color: #0088cc;
+            font-weight: 700;
+        }
+
+        /* --- MOBILE --- */
+        @media (max-width: 600px) {
+            .video-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 colonnes sur mobile */
+                gap: 10px;
+            }
+            body { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. LECTEUR PRINCIPAL -->
+    <div class="main-player">
+        <video id="mainVideo" controls poster="https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Choisissez+une+video">
+            <source src="" type="video/mp4">
+            Votre navigateur ne supporte pas la lecture vidéo.
+        </video>
+        <div class="video-info">
+            <h2 id="mainTitle">Sélectionnez une vidéo dans la liste ci-dessous</h2>
+        </div>
+    </div>
+
+    <!-- 2. LISTE DES VIDÉOS -->
+    <div class="video-list-title">📁 Playlist</div>
+    <div class="video-grid" id="videoGrid">
+        
+        <!-- VIDÉO 1 -->
+        <div class="video-item active" onclick="changerVideo(
+            'https://archive.org/download/VOTRE_DOSSIER_1/video1.mp4', 
+            'https://via.placeholder.com/320x180/333/fff?text=Video+1', 
+            'Titre de la première vidéo', 
+            this)">
+            <img src="https://via.placeholder.com/320x180/333/fff?text=Video+1" alt="Vignette 1">
+            <div class="title">Titre de la première vidéo</div>
+        </div>
+
+        <!-- VIDÉO 2 -->
+        <div class="video-item" onclick="changerVideo(
+            'https://ia600909.us.archive.org/12/items/ssstwitter.com_1721393088409/ssstwitter.com_1721393088409.mp4', 
+            'https://via.placeholder.com/320x180/444/fff?text=Video+2', 
+            'Deuxième vidéo de la liste', 
+            this)">
+            <img src="https://ia600909.us.archive.org/12/items/ssstwitter.com_1721393088409/ssstwitter.com_1721393088409.mp4" alt="Vignette 2">
+            <div class="title">Deuxième vidéo de la liste</div>
+        </div>
+
+        <!-- VIDÉO 3 (Copiez-collez ce bloc pour en ajouter d'autres) -->
+        <div class="video-item" onclick="changerVideo(
+            'https://archive.org/download/VOTRE_DOSSIER_3/video3.mp4', 
+            'https://via.placeholder.com/320x180/555/fff?text=Video+3', 
+            'Troisième vidéo exemple', 
+            this)">
+            <img src="https://via.placeholder.com/320x180/555/fff?text=Video+3" alt="Vignette 3">
+            <div class="title">Troisième vidéo exemple</div>
+        </div>
+
+    </div>
+
+    <!-- 3. SCRIPT JAVASCRIPT POUR CHANGER LA VIDÉO -->
+    <script>
+        function changerVideo(urlVideo, urlVignette, titre, elementClique) {
+            // 1. Récupérer le lecteur et le titre
+            const video = document.getElementById('mainVideo');
+            const source = video.querySelector('source');
+            const titreElement = document.getElementById('mainTitle');
+
+            // 2. Mettre à jour les sources
+            source.src = urlVideo;
+            video.poster = urlVignette;
+            titreElement.textContent = titre;
+
+            // 3. Recharger et lancer la lecture
+            video.load();
+            video.play().catch(e => console.log("Lecture auto bloquée par le navigateur, l'utilisateur doit cliquer sur play."));
+
+            // 4. Mettre à jour l'apparence de la liste (enlever 'active' de tous, ajouter à celui cliqué)
+            document.querySelectorAll('.video-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            elementClique.classList.add('active');
+            
+            // 5. Faire défiler la page vers le lecteur (utile sur mobile)
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+
+</body>
+</html>
