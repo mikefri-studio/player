@@ -3,49 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ma Galerie Vidéo Hybride</title>
+    <title>Ma Galerie Vidéo Premium</title>
     <style>
-        :root { --primary: #0088cc; --bg-dark: #0f0f0f; --bg-card: #1a1a1a; --text-main: #ffffff; --text-muted: #aaaaaa; }
+        :root {
+            --primary: #0088cc;
+            --primary-glow: rgba(0, 136, 204, 0.3);
+            --bg-dark: #0f0f0f;
+            --bg-card: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-dark); color: var(--text-main); padding: 20px; max-width: 1200px; margin: 0 auto; }
-        
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { background-color: #1a1a1a; } 50% { background-color: #2a2a2a; } }
+        @keyframes slideUp { from { transform: translate(-50%, 100px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+        @keyframes slideDown { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, 100px); opacity: 0; } }
+
+        /* --- RECHERCHE --- */
         .search-container { margin-bottom: 20px; position: relative; }
-        .search-input { width: 100%; padding: 12px 20px 12px 45px; background: var(--bg-card); border: 1px solid #333; border-radius: 25px; color: white; font-size: 1rem; outline: none; transition: 0.3s; }
-        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 136, 204, 0.2); }
+        .search-input {
+            width: 100%; padding: 12px 20px 12px 45px; background: var(--bg-card);
+            border: 1px solid #333; border-radius: 25px; color: white; font-size: 1rem;
+            outline: none; transition: 0.3s;
+        }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
         .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
 
-        .main-player { background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); margin-bottom: 30px; border: 1px solid #333; }
-        .main-player.cinema-mode { box-shadow: 0 0 50px rgba(0, 136, 204, 0.3); border-color: var(--primary); }
+        /* --- LECTEUR --- */
+        .main-player {
+            background: #000; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8); margin-bottom: 20px;
+            border: 1px solid #333; transition: all 0.4s ease;
+        }
+        .main-player.cinema-mode {
+            box-shadow: 0 0 60px var(--primary-glow); border-color: var(--primary);
+            max-width: 100vw; margin: 0 -20px 30px -20px;
+        }
         video { width: 100%; height: auto; display: block; max-height: 70vh; background: #000; }
-        .video-info { padding: 15px 20px; background: var(--bg-card); border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .video-info h2 { font-size: 1.2rem; font-weight: 600; }
-        .badge-resume { background: var(--primary); color: white; font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; display: none; }
+        
+        .video-info {
+            padding: 15px 20px; background: var(--bg-card); border-top: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        }
+        .video-info h2 { font-size: 1.2rem; font-weight: 600; flex: 1; }
+        .badge-resume {
+            background: var(--primary); color: white; font-size: 0.75rem;
+            padding: 4px 8px; border-radius: 4px; display: none; white-space: nowrap;
+        }
 
-        .video-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        /* --- ACTIONS RAPIDES --- */
+        .quick-actions {
+            display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+        }
+        .btn-action {
+            background: #333; color: white; border: none; padding: 10px 18px;
+            border-radius: 25px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+            transition: transform 0.2s, background 0.2s; display: flex; align-items: center; gap: 6px;
+        }
+        .btn-action:hover { transform: translateY(-2px); background: #444; }
+        .btn-shuffle { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .btn-share { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .stats-display { color: var(--text-muted); font-size: 0.85rem; margin-left: auto; }
+
+        /* --- GRILLE --- */
+        .video-list-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;
+        }
         .video-count { background: #333; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; }
         .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 
-        .video-item { background: var(--bg-card); border-radius: 8px; overflow: hidden; cursor: pointer; transition: 0.2s; border: 2px solid transparent; position: relative; }
+        .video-item {
+            background: var(--bg-card); border-radius: 8px; overflow: hidden;
+            cursor: pointer; transition: 0.2s; border: 2px solid transparent; position: relative;
+        }
         .video-item:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); border-color: var(--primary); }
         .video-item.active { border-color: var(--primary); background: #252525; }
-        .video-item img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: #111; }
-        .progress-bar { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--primary); width: 0%; transition: width 0.3s; }
-        .video-item .title { padding: 10px 12px; font-size: 0.9rem; font-weight: 500; color: #ddd; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+        
+        .video-item img {
+            width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;
+            background: #111; transition: transform 0.3s ease;
+        }
+        .video-item:hover img { transform: scale(1.05); }
+        
+        .progress-bar {
+            position: absolute; bottom: 0; left: 0; height: 4px;
+            background: var(--primary); width: 0%; transition: width 0.3s; z-index: 2;
+        }
+        .video-item .title {
+            padding: 10px 12px; font-size: 0.9rem; font-weight: 500; color: #ddd;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; line-height: 1.3;
+        }
         .video-item.active .title { color: var(--primary); font-weight: 700; }
 
-        .loading-state, .error-state, .empty-state { text-align: center; padding: 40px; color: var(--text-muted); grid-column: 1 / -1; }
+        /* --- ÉTATS & TOAST --- */
+        .loading-state, .error-state, .empty-state {
+            text-align: center; padding: 40px; color: var(--text-muted); grid-column: 1 / -1;
+        }
         .error-state { color: #ff6b6b; }
+        
+        .skeleton {
+            background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+            background-size: 200% 100%; animation: pulse 1.5s infinite; border-radius: 8px; height: 180px;
+        }
+
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 24px;
+            border-radius: 8px; border-left: 4px solid var(--primary); z-index: 10000;
+            animation: slideUp 0.3s ease; font-weight: 500; backdrop-filter: blur(5px);
+        }
+
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-dark); }
         ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        @media (max-width: 600px) { body { padding: 10px; } .video-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } .video-info { flex-direction: column; align-items: flex-start; gap: 8px; } }
+        ::-webkit-scrollbar-thumb:hover { background: #666; }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .video-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .video-info { flex-direction: column; align-items: flex-start; }
+            .quick-actions { justify-content: center; }
+            .stats-display { margin-left: 0; width: 100%; text-align: center; margin-top: 5px; }
+        }
     </style>
 </head>
 <body>
 
     <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" class="search-input" placeholder="Rechercher une vidéo...">
+        <input type="text" id="searchInput" class="search-input" placeholder="Rechercher une vidéo par titre...">
     </div>
 
     <div class="main-player" id="mainPlayer">
@@ -56,16 +156,23 @@
         <div class="video-info">
             <h2 id="mainTitle">Chargement de votre bibliothèque...</h2>
             <span class="badge-resume" id="resumeBadge">▶ Reprendre</span>
+            <button class="btn-action" onclick="toggleCinemaMode()" title="Mode Cinéma (C)">🎬 Cinéma</button>
         </div>
     </div>
 
+    <div class="quick-actions">
+        <button class="btn-action btn-shuffle" onclick="jouerVideoAleatoire()">🎲 Aléatoire</button>
+        <button class="btn-action btn-share" onclick="genererLienPartage()">🔗 Partager</button>
+        <div class="stats-display" id="statsDisplay">📊 Calcul des stats...</div>
+    </div>
+
     <div class="video-list-header">
-        <span>📁 Bibliothèque Mixte (JSON + Archive.org)</span>
+        <span>📁 Bibliothèque (JSON + Archive.org)</span>
         <span class="video-count" id="videoCount">0 vidéo</span>
     </div>
     
     <div class="video-grid" id="videoGrid">
-        <div class="loading-state">⏳ Fusion des sources en cours...</div>
+        <!-- Les squelettes de chargement seront injectés ici -->
     </div>
 
     <script>
@@ -73,39 +180,74 @@
         const MAX_VIDEOS = 100;
         let allVideos = [];
         let currentVideoIndex = -1;
+        let playbackSpeeds = [0.5, 1, 1.25, 1.5, 2];
+        let currentSpeedIndex = 1;
 
-        // Fonction utilitaire pour extraire la vignette si elle manque dans le JSON
+        // --- UTILITAIRES ---
         function obtenirVignetteAuto(urlVideo) {
             const match = urlVideo.match(/\/(?:items|download)\/([^\/]+)\//);
             return match ? `https://archive.org/download/${match[1]}/__ia_thumb.jpg` : 'https://via.placeholder.com/320x180/222/888?text=No+Thumb';
         }
 
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0m 00s";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}m ${s < 10 ? '0' : ''}${s}s`;
+        }
+
+        function showToast(message, duree = 3000) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideDown 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, duree);
+        }
+
+        function mettreAJourStats(dureeSeconds) {
+            let stats = JSON.parse(localStorage.getItem('viewingStats') || '{"totalTime": 0, "videosWatched": 0}');
+            stats.totalTime += dureeSeconds;
+            stats.videosWatched += 1;
+            localStorage.setItem('viewingStats', JSON.stringify(stats));
+            afficherStats();
+        }
+
+        function afficherStats() {
+            const stats = JSON.parse(localStorage.getItem('viewingStats') || '{"totalTime": 0, "videosWatched": 0}');
+            const h = Math.floor(stats.totalTime / 3600);
+            const m = Math.floor((stats.totalTime % 3600) / 60);
+            document.getElementById('statsDisplay').textContent = `📊 ${stats.videosWatched} vidéos vues (${h}h ${m}min)`;
+        }
+
+        // --- CHARGEMENT DES DONNÉES ---
         async function chargerToutesLesVideos() {
             const grid = document.getElementById('videoGrid');
+            // Afficher des squelettes de chargement
+            grid.innerHTML = Array(6).fill('<div class="skeleton"></div>').join('');
             let combinedVideos = [];
 
             try {
-                // 1. CHARGER LE FICHIER JSON LOCAL (Priorité 1)
+                // 1. JSON LOCAL
                 try {
                     const res = await fetch('videos.json');
                     if (res.ok) {
                         const jsonVideos = await res.json();
-                        const normalizedJson = jsonVideos.map(v => ({
-                            // L'ID unique est soit l'ID fourni, soit l'URL complète de la vidéo
-                            id: v.id || v.video, 
+                        combinedVideos = [...combinedVideos, ...jsonVideos.map(v => ({
                             titre: v.titre,
                             video: v.video,
                             vignette: v.vignette || obtenirVignetteAuto(v.video),
                             source: 'json'
-                        }));
-                        combinedVideos = [...combinedVideos, ...normalizedJson];
-                        console.log(`✅ ${normalizedJson.length} vidéos chargées depuis videos.json`);
+                        }))];
                     }
-                } catch (e) {
-                    console.log("ℹ️ Pas de fichier videos.json trouvé, on continue avec Archive.org uniquement.");
-                }
+                } catch (e) { console.log("ℹ️ Pas de videos.json, suite avec Archive.org"); }
 
-                // 2. CHARGER ARCHIVE.ORG (Priorité 2)
+                // 2. ARCHIVE.ORG
                 const apiUrl = `https://archive.org/advancedsearch.php?q=uploader:"${ARCHIVE_USERNAME}"&fl[]=identifier,title,publicdate&sort[]=-publicdate&output=json&rows=${MAX_VIDEOS}`;
                 const response = await fetch(apiUrl);
                 const data = await response.json();
@@ -113,9 +255,7 @@
                 if (data.response.numFound > 0) {
                     for (const doc of data.response.docs) {
                         const identifier = doc.identifier;
-                        
-                        // Chercher le vrai fichier .mp4
-                        let mp4File = `${identifier}.mp4`; // Fallback par défaut
+                        let mp4File = `${identifier}.mp4`;
                         try {
                             const filesRes = await fetch(`https://archive.org/metadata/${identifier}`);
                             const filesData = await filesRes.json();
@@ -124,82 +264,71 @@
                                 for (const file of filesData.files) {
                                     if (file.name && file.name.endsWith('.mp4') && file.format === 'MPEG4') {
                                         const size = parseInt(file.size) || 0;
-                                        if (size > biggestSize) {
-                                            biggestSize = size;
-                                            mp4File = file.name;
-                                        }
+                                        if (size > biggestSize) { biggestSize = size; mp4File = file.name; }
                                     }
                                 }
                             }
-                        } catch (e) { /* Ignore les erreurs de metadata */ }
+                        } catch (e) {}
 
+                        const videoUrl = `https://archive.org/download/${identifier}/${mp4File}`;
                         combinedVideos.push({
-                            id: identifier, // L'ID est le nom du dossier Archive
                             titre: doc.title || identifier,
-                            video: `https://archive.org/download/${identifier}/${mp4File}`,
+                            video: videoUrl,
                             vignette: `https://archive.org/download/${identifier}/__ia_thumb.jpg`,
                             source: 'archive',
                             date: doc.publicdate
                         });
                     }
-                    console.log(`✅ ${data.response.numFound} vidéos chargées depuis Archive.org`);
                 }
 
-                // 3. DÉDOUBLONNAGE INTELLIGENT 🧠
-                // On utilise une Map pour garantir l'unicité basée sur l'ID ou l'URL vidéo
-                const uniqueVideosMap = new Map();
-                for (const video of combinedVideos) {
-                    const uniqueKey = video.id; 
-                    // Si la clé n'existe pas encore, on l'ajoute. 
-                    // Comme le JSON est traité en premier, il a la priorité s'il y a conflit d'ID.
-                    if (!uniqueVideosMap.has(uniqueKey)) {
-                        uniqueVideosMap.set(uniqueKey, video);
-                    }
+                // 3. DÉDOUBLONNAGE (Clé unique = URL de la vidéo)
+                const uniqueMap = new Map();
+                for (const v of combinedVideos) {
+                    if (!uniqueMap.has(v.video)) uniqueMap.set(v.video, v);
                 }
 
-                // Convertir la Map en tableau final et trier par date (si disponible)
-                allVideos = Array.from(uniqueVideosMap.values()).sort((a, b) => {
+                allVideos = Array.from(uniqueMap.values()).sort((a, b) => {
                     if (a.date && b.date) return new Date(b.date) - new Date(a.date);
                     return 0;
                 });
 
-                console.log(`🎯 Total après dédoublonnage : ${allVideos.length} vidéos uniques.`);
-
                 if (allVideos.length === 0) {
-                    grid.innerHTML = `<div class="empty-state">Aucune vidéo trouvée. Vérifiez votre videos.json ou attendez l'indexation Archive.org.</div>`;
+                    grid.innerHTML = `<div class="empty-state">Aucune vidéo trouvée. Vérifiez videos.json ou attendez l'indexation Archive.org.</div>`;
                     return;
                 }
 
                 document.getElementById('videoCount').textContent = `${allVideos.length} vidéo${allVideos.length > 1 ? 's' : ''}`;
                 afficherGrille(allVideos);
                 restaurerSession();
+                afficherStats();
 
             } catch (error) {
                 console.error(error);
-                grid.innerHTML = `<div class="error-state">❌ Erreur de chargement : ${error.message}</div>`;
+                grid.innerHTML = `<div class="error-state">❌ Erreur : ${error.message}</div>`;
             }
         }
 
+        // --- AFFICHAGE ---
         function afficherGrille(videosAAfficher) {
             const grid = document.getElementById('videoGrid');
             grid.innerHTML = '';
             if (videosAAfficher.length === 0) {
-                grid.innerHTML = '<div class="empty-state">Aucune vidéo ne correspond à votre recherche.</div>';
+                grid.innerHTML = '<div class="empty-state">Aucun résultat pour cette recherche.</div>';
                 return;
             }
 
             videosAAfficher.forEach((video, index) => {
                 const originalIndex = allVideos.indexOf(video);
                 const isActive = originalIndex === currentVideoIndex;
-                const savedTime = localStorage.getItem(`progress_${video.id}`);
-                const progressPercent = savedTime ? 15 : 0;
+                const savedTime = localStorage.getItem(`progress_${video.video}`);
+                const progressPercent = savedTime ? Math.min((parseFloat(savedTime) / 600) * 100, 100) : 0; // Estimation sur 10min pour la barre
 
                 const item = document.createElement('div');
                 item.className = `video-item ${isActive ? 'active' : ''}`;
                 item.onclick = () => jouerVideo(originalIndex);
 
                 item.innerHTML = `
-                    <img src="${video.vignette}" alt="${video.titre}" onerror="this.src='https://via.placeholder.com/320x180/222/888?text=Erreur'">
+                    <img src="${video.vignette}" alt="${video.titre}" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180/222/888?text=Erreur'">
                     <div class="progress-bar" style="width: ${progressPercent}%"></div>
                     <div class="title">${video.titre}</div>
                 `;
@@ -207,6 +336,7 @@
             });
         }
 
+        // --- LECTURE ---
         function jouerVideo(index) {
             if (index < 0 || index >= allVideos.length) return;
             currentVideoIndex = index;
@@ -215,14 +345,13 @@
             const mainVideo = document.getElementById('mainVideo');
             const mainTitle = document.getElementById('mainTitle');
             const resumeBadge = document.getElementById('resumeBadge');
-            const playerContainer = document.getElementById('mainPlayer');
 
             mainTitle.textContent = videoData.titre;
             mainVideo.querySelector('source').src = videoData.video;
             mainVideo.poster = videoData.vignette;
-            playerContainer.classList.add('cinema-mode');
+            mainVideo.playbackRate = playbackSpeeds[currentSpeedIndex]; // Garder la vitesse choisie
 
-            const savedTime = localStorage.getItem(`progress_${videoData.id}`);
+            const savedTime = localStorage.getItem(`progress_${videoData.video}`);
             if (savedTime && parseFloat(savedTime) > 5) {
                 resumeBadge.style.display = 'inline-block';
                 resumeBadge.textContent = `▶ Reprendre à ${formatTime(savedTime)}`;
@@ -234,37 +363,43 @@
 
             mainVideo.load();
             mainVideo.play().catch(() => {});
+            
             afficherGrille(getFilteredVideos());
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            localStorage.setItem('lastVideoId', videoData.id);
+            localStorage.setItem('lastVideoUrl', videoData.video);
         }
 
         function setupProgressSaving() {
             const video = document.getElementById('mainVideo');
             video.addEventListener('timeupdate', () => {
                 if (currentVideoIndex !== -1 && !video.ended && allVideos[currentVideoIndex]) {
-                    localStorage.setItem(`progress_${allVideos[currentVideoIndex].id}`, video.currentTime);
+                    localStorage.setItem(`progress_${allVideos[currentVideoIndex].video}`, video.currentTime);
                 }
             });
             video.addEventListener('ended', () => {
                 if (currentVideoIndex !== -1 && allVideos[currentVideoIndex]) {
-                    localStorage.removeItem(`progress_${allVideos[currentVideoIndex].id}`);
-                    if (currentVideoIndex < allVideos.length - 1) jouerVideo(currentVideoIndex + 1);
+                    localStorage.removeItem(`progress_${allVideos[currentVideoIndex].video}`);
+                    mettreAJourStats(video.duration);
+                    if (currentVideoIndex < allVideos.length - 1) {
+                        showToast("⏭️ Lecture de la vidéo suivante...");
+                        setTimeout(() => jouerVideo(currentVideoIndex + 1), 1500);
+                    }
                 }
             });
         }
 
         function restaurerSession() {
-            const lastVideoId = localStorage.getItem('lastVideoId');
-            if (lastVideoId) {
-                const index = allVideos.findIndex(v => v.id === lastVideoId);
+            const lastVideoUrl = localStorage.getItem('lastVideoUrl');
+            if (lastVideoUrl) {
+                const index = allVideos.findIndex(v => v.video === lastVideoUrl);
                 if (index !== -1) {
                     currentVideoIndex = index;
-                    const videoData = allVideos[index];
-                    document.getElementById('mainTitle').textContent = videoData.titre;
-                    document.getElementById('mainVideo').querySelector('source').src = videoData.video;
-                    document.getElementById('mainVideo').poster = videoData.vignette;
-                    const savedTime = localStorage.getItem(`progress_${videoData.id}`);
+                    const v = allVideos[index];
+                    document.getElementById('mainTitle').textContent = v.titre;
+                    document.getElementById('mainVideo').querySelector('source').src = v.video;
+                    document.getElementById('mainVideo').poster = v.vignette;
+                    
+                    const savedTime = localStorage.getItem(`progress_${v.video}`);
                     if (savedTime && parseFloat(savedTime) > 5) {
                         document.getElementById('resumeBadge').style.display = 'inline-block';
                         document.getElementById('resumeBadge').textContent = `▶ Reprendre (${formatTime(savedTime)})`;
@@ -274,33 +409,74 @@
             }
         }
 
-        function getFilteredVideos() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            if (!query) return allVideos;
-            return allVideos.filter(v => v.titre.toLowerCase().includes(query));
+        // --- FONCTIONNALITÉS INTELLIGENTES ---
+        function jouerVideoAleatoire() {
+            if (allVideos.length === 0) return;
+            const rnd = Math.floor(Math.random() * allVideos.length);
+            jouerVideo(rnd);
+            showToast(`🎲 Lecture aléatoire : ${allVideos[rnd].titre}`);
         }
 
+        function genererLienPartage() {
+            if (currentVideoIndex === -1) { showToast("⚠️ Lancez d'abord une vidéo"); return; }
+            const v = allVideos[currentVideoIndex];
+            const t = Math.floor(document.getElementById('mainVideo').currentTime);
+            const url = `${window.location.origin}${window.location.pathname}?v=${encodeURIComponent(v.video)}&t=${t}`;
+            navigator.clipboard.writeText(url).then(() => showToast("🔗 Lien copié avec le timestamp !"));
+        }
+
+        function chargerVideoDepuisURL() {
+            const params = new URLSearchParams(window.location.search);
+            const vUrl = params.get('v');
+            const t = parseInt(params.get('t')) || 0;
+            if (vUrl && allVideos.length > 0) {
+                const index = allVideos.findIndex(v => v.video === vUrl);
+                if (index !== -1) {
+                    setTimeout(() => {
+                        jouerVideo(index);
+                        document.getElementById('mainVideo').currentTime = t;
+                        showToast("📍 Reprise depuis le lien partagé");
+                    }, 500);
+                }
+            }
+        }
+
+        function toggleCinemaMode() {
+            const p = document.getElementById('mainPlayer');
+            p.classList.toggle('cinema-mode');
+            showToast(p.classList.contains('cinema-mode') ? "🎬 Mode cinéma activé" : "Mode cinéma désactivé");
+        }
+
+        function getFilteredVideos() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            return q ? allVideos.filter(v => v.titre.toLowerCase().includes(q)) : allVideos;
+        }
+
+        // --- ÉVÉNEMENTS ---
         document.getElementById('searchInput').addEventListener('input', () => afficherGrille(getFilteredVideos()));
 
         document.addEventListener('keydown', (e) => {
             if (document.activeElement.id === 'searchInput') return;
-            const video = document.getElementById('mainVideo');
-            if (e.code === 'Space') { e.preventDefault(); video.paused ? video.play() : video.pause(); }
-            if (e.code === 'KeyF') { e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : video.requestFullscreen(); }
-            if (e.code === 'KeyM') { e.preventDefault(); video.muted = !video.muted; }
-            if (e.code === 'ArrowRight') { e.preventDefault(); video.currentTime += 10; }
-            if (e.code === 'ArrowLeft') { e.preventDefault(); video.currentTime -= 10; }
+            const v = document.getElementById('mainVideo');
+            if (e.code === 'Space') { e.preventDefault(); v.paused ? v.play() : v.pause(); }
+            if (e.code === 'KeyF') { e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : v.requestFullscreen(); }
+            if (e.code === 'KeyC') { e.preventDefault(); toggleCinemaMode(); }
+            if (e.code === 'KeyM') { e.preventDefault(); v.muted = !v.muted; showToast(v.muted ? "🔇 Muet" : "🔊 Son activé"); }
+            if (e.code === 'ArrowRight') { e.preventDefault(); v.currentTime += 10; }
+            if (e.code === 'ArrowLeft') { e.preventDefault(); v.currentTime -= 10; }
+            if (e.code === 'KeyS') {
+                e.preventDefault();
+                currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length;
+                v.playbackRate = playbackSpeeds[currentSpeedIndex];
+                showToast(`⏩ Vitesse : ${playbackSpeeds[currentSpeedIndex]}x`);
+            }
         });
 
-        function formatTime(seconds) {
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60);
-            return `${m}m ${s < 10 ? '0' : ''}${s}s`;
-        }
-
+        // --- INITIALISATION ---
         document.addEventListener('DOMContentLoaded', () => {
             chargerToutesLesVideos();
             setupProgressSaving();
+            chargerVideoDepuisURL();
         });
     </script>
 </body>
