@@ -797,6 +797,447 @@
             chargerToutesLesVideos(); setupProgressSaving(); chargerVideoDepuisURL();
             setTimeout(() => playerObserver.observe(document.getElementById('mainPlayer')), 1000);
         });
-    </script>
+   <!-- === AU-delà DES LIMITES === -->
+
+<!-- Bibliothèques externes via CDN (gratuites) -->
+<script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+
+<style>
+    /* Styles pour les nouvelles fonctionnalités */
+    .ab-loop-controls {
+        display: flex; gap: 10px; margin: 10px 0; padding: 10px;
+        background: rgba(0,0,0,0.5); border-radius: 8px;
+    }
+    .ab-btn {
+        background: #333; color: white; border: none; padding: 8px 16px;
+        border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+    }
+    .ab-btn.active { background: var(--primary); }
+    
+    .heatmap-container {
+        position: absolute; bottom: 0; left: 0; right: 0; height: 8px;
+        background: rgba(255,255,255,0.1); z-index: 5;
+    }
+    .heatmap-bar {
+        height: 100%; background: linear-gradient(90deg, #ff0000, #ff6600, #ffff00);
+        opacity: 0.7;
+    }
+    
+    .notes-panel {
+        position: fixed; right: -400px; top: 0; width: 400px; height: 100%;
+        background: var(--bg-card); border-left: 1px solid #333;
+        transition: right 0.3s; z-index: 9998; padding: 20px; overflow-y: auto;
+    }
+    .notes-panel.open { right: 0; }
+    .note-item {
+        background: #252525; padding: 12px; border-radius: 6px;
+        margin-bottom: 10px; cursor: pointer;
+    }
+    .note-item:hover { background: #333; }
+    .note-time { color: var(--primary); font-size: 0.85rem; font-weight: 600; }
+    .note-text { color: #ddd; margin-top: 5px; font-size: 0.9rem; }
+    
+    .visualizer {
+        position: absolute; bottom: 0; left: 0; right: 0; height: 60px;
+        pointer-events: none; opacity: 0.6;
+    }
+    
+    .watch-party-modal {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: var(--bg-card); padding: 30px; border-radius: 12px;
+        z-index: 10003; max-width: 500px; width: 90%; border: 1px solid #444;
+    }
+    .watch-party-modal input {
+        width: 100%; padding: 10px; margin: 10px 0; background: #1a1a1a;
+        border: 1px solid #333; border-radius: 6px; color: white;
+    }
+    
+    .chapter-marker {
+        position: absolute; top: 0; bottom: 0; width: 2px;
+        background: var(--primary); z-index: 6;
+    }
+    .chapter-label {
+        position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+        background: var(--primary); color: white; padding: 2px 6px;
+        border-radius: 3px; font-size: 0.7rem; white-space: nowrap;
+    }
+</style>
+
+<!-- Panneau de Notes -->
+<div class="notes-panel" id="notesPanel">
+    <h3>📝 Mes Notes</h3>
+    <button class="ab-btn" onclick="addNote()" style="margin: 10px 0; width: 100%;">+ Ajouter une note à ce moment</button>
+    <div id="notesList"></div>
+</div>
+
+<!-- Modal Watch Party -->
+<div class="modal-overlay" id="watchPartyModal">
+    <div class="watch-party-modal">
+        <h3>👥 Watch Party</h3>
+        <p>Regardez cette vidéo en même temps que quelqu'un d'autre !</p>
+        <input type="text" id="peerIdInput" placeholder="ID de votre ami (ou laissez vide pour créer)">
+        <button class="modal-btn" onclick="startWatchParty()">Rejoindre / Créer</button>
+        <button class="modal-btn secondary" onclick="closeWatchParty()">Annuler</button>
+        <div id="watchPartyStatus" style="margin-top: 15px; color: var(--text-muted);"></div>
+    </div>
+</div>
+
+<script>
+// === FONCTIONNALITÉS AU-DELÀ DES LIMITES ===
+
+// 1. A-B LOOP
+let abLoop = { a: null, b: null, active: false };
+function toggleABLoop(point) {
+    const video = document.getElementById('mainVideo');
+    if (point === 'a') {
+        abLoop.a = video.currentTime;
+        showToast(`🔵 Point A défini à ${formatTime(abLoop.a)}`);
+    } else if (point === 'b') {
+        abLoop.b = video.currentTime;
+        abLoop.active = true;
+        showToast(`🔴 Point B défini à ${formatTime(abLoop.b)} - Boucle activée`);
+    }
+}
+
+// Vérifier la boucle A-B pendant la lecture
+document.getElementById('mainVideo').addEventListener('timeupdate', function() {
+    if (abLoop.active && abLoop.a !== null && abLoop.b !== null) {
+        if (this.currentTime >= abLoop.b) {
+            this.currentTime = abLoop.a;
+        }
+    }
+});
+
+// 2. HEATMAP DE VISIONNAGE
+function updateHeatmap() {
+    const video = document.getElementById('mainVideo');
+    if (currentVideoIndex === -1) return;
+    
+    let heatmap = JSON.parse(localStorage.getItem(`heatmap_${allVideos[currentVideoIndex].video}`) || '{}');
+    const currentTime = Math.floor(video.currentTime);
+    heatmap[currentTime] = (heatmap[currentTime] || 0) + 1;
+    localStorage.setItem(`heatmap_${allVideos[currentVideoIndex].video}`, JSON.stringify(heatmap));
+}
+
+function displayHeatmap() {
+    if (currentVideoIndex === -1) return;
+    const heatmap = JSON.parse(localStorage.getItem(`heatmap_${allVideos[currentVideoIndex].video}`) || '{}');
+    const video = document.getElementById('mainVideo');
+    const duration = video.duration || 1;
+    
+    // Créer ou mettre à jour la barre de heatmap
+    let heatmapBar = document.querySelector('.heatmap-bar');
+    if (!heatmapBar) {
+        heatmapBar = document.createElement('div');
+        heatmapBar.className = 'heatmap-bar';
+        const container = document.createElement('div');
+        container.className = 'heatmap-container';
+        container.appendChild(heatmapBar);
+        document.getElementById('mainPlayer').appendChild(container);
+    }
+    
+    // Générer le gradient basé sur les données
+    const segments = [];
+    for (let i = 0; i < duration; i += Math.ceil(duration / 100)) {
+        const views = heatmap[i] || 0;
+        const intensity = Math.min(views / 10, 1);
+        segments.push(`rgba(255, ${Math.floor(255 * (1 - intensity))}, 0, ${intensity})`);
+    }
+    heatmapBar.style.background = `linear-gradient(90deg, ${segments.join(', ')})`;
+}
+
+// Mettre à jour la heatmap toutes les secondes
+setInterval(updateHeatmap, 1000);
+
+// 3. NOTES PERSONNELLES
+function addNote() {
+    const video = document.getElementById('mainVideo');
+    const time = video.currentTime;
+    const text = prompt('Votre note à ' + formatTime(time) + ' :');
+    if (text) {
+        let notes = JSON.parse(localStorage.getItem(`notes_${allVideos[currentVideoIndex].video}`) || '[]');
+        notes.push({ time, text, date: new Date().toISOString() });
+        localStorage.setItem(`notes_${allVideos[currentVideoIndex].video}`, JSON.stringify(notes));
+        showToast('📝 Note ajoutée');
+        displayNotes();
+    }
+}
+
+function displayNotes() {
+    if (currentVideoIndex === -1) return;
+    const notes = JSON.parse(localStorage.getItem(`notes_${allVideos[currentVideoIndex].video}`) || '[]');
+    const list = document.getElementById('notesList');
+    list.innerHTML = notes.map(note => `
+        <div class="note-item" onclick="seekTo(${note.time})">
+            <div class="note-time">${formatTime(note.time)}</div>
+            <div class="note-text">${note.text}</div>
+        </div>
+    `).join('');
+}
+
+function seekTo(time) {
+    document.getElementById('mainVideo').currentTime = time;
+    document.getElementById('notesPanel').classList.remove('open');
+}
+
+function toggleNotesPanel() {
+    document.getElementById('notesPanel').classList.toggle('open');
+    displayNotes();
+}
+
+// 4. WATCH PARTY (WebRTC via PeerJS)
+let peer = null;
+let watchPartyConn = null;
+
+function startWatchParty() {
+    const peerIdInput = document.getElementById('peerIdInput').value;
+    const status = document.getElementById('watchPartyStatus');
+    
+    if (!peer) {
+        peer = new Peer();
+        peer.on('open', (id) => {
+            status.innerHTML = `✅ Votre ID : <strong>${id}</strong><br>Partagez-le avec votre ami !`;
+            
+            if (peerIdInput) {
+                // Rejoindre quelqu'un
+                watchPartyConn = peer.connect(peerIdInput);
+                setupWatchPartyConnection();
+            }
+        });
+        
+        peer.on('connection', (conn) => {
+            watchPartyConn = conn;
+            setupWatchPartyConnection();
+            status.innerHTML = '👥 Quelqu\'un a rejoint !';
+        });
+    } else if (peerIdInput) {
+        watchPartyConn = peer.connect(peerIdInput);
+        setupWatchPartyConnection();
+    }
+}
+
+function setupWatchPartyConnection() {
+    watchPartyConn.on('open', () => {
+        showToast('👥 Connecté ! Synchronisation...');
+        
+        // Envoyer l'état actuel
+        const video = document.getElementById('mainVideo');
+        watchPartyConn.send({
+            type: 'sync',
+            videoIndex: currentVideoIndex,
+            time: video.currentTime,
+            playing: !video.paused
+        });
+    });
+    
+    watchPartyConn.on('data', (data) => {
+        if (data.type === 'sync') {
+            const video = document.getElementById('mainVideo');
+            if (data.videoIndex !== currentVideoIndex) {
+                jouerVideo(data.videoIndex);
+            }
+            video.currentTime = data.time;
+            if (data.playing) video.play();
+            else video.pause();
+        }
+    });
+}
+
+// Synchroniser quand on change de vidéo ou qu'on pause/play
+document.getElementById('mainVideo').addEventListener('play', () => {
+    if (watchPartyConn) watchPartyConn.send({ type: 'sync', videoIndex: currentVideoIndex, time: document.getElementById('mainVideo').currentTime, playing: true });
+});
+document.getElementById('mainVideo').addEventListener('pause', () => {
+    if (watchPartyConn) watchPartyConn.send({ type: 'sync', videoIndex: currentVideoIndex, time: document.getElementById('mainVideo').currentTime, playing: false });
+});
+
+function closeWatchParty() {
+    document.getElementById('watchPartyModal').classList.remove('active');
+}
+
+function openWatchParty() {
+    document.getElementById('watchPartyModal').classList.add('active');
+}
+
+// 5. MEDIA SESSION API (Contrôles sur écran de verrouillage)
+if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('play', () => document.getElementById('mainVideo').play());
+    navigator.mediaSession.setActionHandler('pause', () => document.getElementById('mainVideo').pause());
+    navigator.mediaSession.setActionHandler('seekbackward', () => document.getElementById('mainVideo').currentTime -= 10);
+    navigator.mediaSession.setActionHandler('seekforward', () => document.getElementById('mainVideo').currentTime += 10);
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+        if (currentVideoIndex > 0) jouerVideo(currentVideoIndex - 1);
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+        if (currentVideoIndex < allVideos.length - 1) jouerVideo(currentVideoIndex + 1);
+    });
+}
+
+// Mettre à jour les métadonnées Media Session quand on change de vidéo
+function updateMediaSession() {
+    if (currentVideoIndex === -1 || !('mediaSession' in navigator)) return;
+    const video = allVideos[currentVideoIndex];
+    navigator.mediaSession.metadata = new MediaMetadata({
+        title: video.titre,
+        artist: 'Ma Galerie Vidéo',
+        artwork: [{ src: video.vignette, sizes: '512x512', type: 'image/jpeg' }]
+    });
+}
+
+// 6. WAKE LOCK (Empêcher l'écran de s'éteindre)
+let wakeLock = null;
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            showToast(' Écran maintenu allumé');
+        }
+    } catch (err) {
+        console.log('Wake Lock non supporté');
+    }
+}
+
+document.getElementById('mainVideo').addEventListener('play', requestWakeLock);
+document.getElementById('mainVideo').addEventListener('pause', () => {
+    if (wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+    }
+});
+
+// 7. GAMEPAD API (Contrôle par manette)
+function pollGamepad() {
+    const gamepads = navigator.getGamepads();
+    for (const gp of gamepads) {
+        if (!gp) continue;
+        const video = document.getElementById('mainVideo');
+        
+        // Bouton A (0) = Play/Pause
+        if (gp.buttons[0] && gp.buttons[0].pressed) {
+            video.paused ? video.play() : video.pause();
+        }
+        // Bouton B (1) = Plein écran
+        if (gp.buttons[1] && gp.buttons[1].pressed) {
+            document.fullscreenElement ? document.exitFullscreen() : video.requestFullscreen();
+        }
+        // Stick gauche horizontal = Seek
+        if (Math.abs(gp.axes[0]) > 0.5) {
+            video.currentTime += gp.axes[0] * 0.5;
+        }
+    }
+    requestAnimationFrame(pollGamepad);
+}
+requestAnimationFrame(pollGamepad);
+
+// 8. VISUALISEUR AUDIO
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const analyser = audioContext.createAnalyser();
+let audioSource = null;
+
+function setupVisualizer() {
+    const video = document.getElementById('mainVideo');
+    if (!audioSource) {
+        audioSource = audioContext.createMediaElementSource(video);
+        audioSource.connect(analyser);
+        analyser.connect(audioContext.destination);
+    }
+    
+    const canvas = document.createElement('canvas');
+    canvas.className = 'visualizer';
+    canvas.width = window.innerWidth;
+    canvas.height = 60;
+    document.getElementById('mainPlayer').appendChild(canvas);
+    
+    const ctx = canvas.getContext('2d');
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    
+    function draw() {
+        requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const barWidth = (canvas.width / bufferLength) * 2.5;
+        let x = 0;
+        
+        for (let i = 0; i < bufferLength; i++) {
+            const barHeight = (dataArray[i] / 255) * canvas.height;
+            ctx.fillStyle = `rgba(229, 9, 20, ${dataArray[i] / 255})`;
+            ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+            x += barWidth + 1;
+        }
+    }
+    draw();
+}
+
+// Activer le visualiseur au premier play
+document.getElementById('mainVideo').addEventListener('play', () => {
+    if (audioContext.state === 'suspended') audioContext.resume();
+    if (!document.querySelector('.visualizer')) setupVisualizer();
+}, { once: true });
+
+// 9. DRAG & DROP DE FICHIERS LOCAUX
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    for (const file of files) {
+        if (file.type.startsWith('video/')) {
+            const url = URL.createObjectURL(file);
+            const video = document.getElementById('mainVideo');
+            video.src = url;
+            video.play();
+            document.getElementById('mainTitle').textContent = file.name;
+            showToast(` Lecture locale : ${file.name}`);
+            break;
+        }
+    }
+});
+
+// 10. RACCOURCIS POUR LES NOUVELLES FONCTIONS
+document.addEventListener('keydown', (e) => {
+    if (document.activeElement.id === 'searchInput') return;
+    
+    // L = A-B Loop (A puis B)
+    if (e.code === 'KeyL') {
+        e.preventDefault();
+        if (!abLoop.a) toggleABLoop('a');
+        else if (!abLoop.b) toggleABLoop('b');
+        else {
+            abLoop = { a: null, b: null, active: false };
+            showToast('🔁 Boucle A-B désactivée');
+        }
+    }
+    
+    // N = Notes
+    if (e.code === 'KeyN') {
+        e.preventDefault();
+        toggleNotesPanel();
+    }
+    
+    // W = Watch Party
+    if (e.code === 'KeyW') {
+        e.preventDefault();
+        openWatchParty();
+    }
+});
+
+// Ajouter les boutons dans l'interface
+const quickActions = document.querySelector('.quick-actions');
+quickActions.innerHTML += `
+    <button class="btn-action" onclick="toggleABLoop('a')" title="Point A">🔵 A</button>
+    <button class="btn-action" onclick="toggleABLoop('b')" title="Point B">🔴 B</button>
+    <button class="btn-action" onclick="toggleNotesPanel()">📝 Notes</button>
+    <button class="btn-action" onclick="openWatchParty()">👥 Watch Party</button>
+`;
+
+// Mettre à jour Media Session quand on change de vidéo
+const originalJouerVideo = jouerVideo;
+jouerVideo = function(index) {
+    originalJouerVideo(index);
+    setTimeout(updateMediaSession, 500);
+};
+</script>
 </body>
 </html>
