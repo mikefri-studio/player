@@ -3,267 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ma Galerie Vidéo Premium</title>
+    <title>Ma Galerie Vidéo Automatique</title>
     <style>
-        /* --- RESET & VARIABLES --- */
-        :root {
-            --primary: #0088cc;
-            --bg-dark: #0f0f0f;
-            --bg-card: #1a1a1a;
-            --text-main: #ffffff;
-            --text-muted: #aaaaaa;
-        }
+        :root { --primary: #0088cc; --bg-dark: #0f0f0f; --bg-card: #1a1a1a; --text-main: #ffffff; --text-muted: #aaaaaa; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-dark); color: var(--text-main); padding: 20px; max-width: 1200px; margin: 0 auto; }
         
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .search-container { margin-bottom: 20px; position: relative; }
+        .search-input { width: 100%; padding: 12px 20px 12px 45px; background: var(--bg-card); border: 1px solid #333; border-radius: 25px; color: white; font-size: 1rem; outline: none; transition: 0.3s; }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 136, 204, 0.2); }
+        .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
 
-        /* --- BARRE DE RECHERCHE --- */
-        .search-container {
-            margin-bottom: 20px;
-            position: relative;
-        }
-        .search-input {
-            width: 100%;
-            padding: 12px 20px 12px 45px;
-            background: var(--bg-card);
-            border: 1px solid #333;
-            border-radius: 25px;
-            color: white;
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-        .search-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 15px rgba(0, 136, 204, 0.2);
-        }
-        .search-icon {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-        }
-
-        /* --- LECTEUR PRINCIPAL --- */
-        .main-player {
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-            margin-bottom: 30px;
-            border: 1px solid #333;
-            transition: box-shadow 0.3s ease;
-        }
-        .main-player.cinema-mode {
-            box-shadow: 0 0 50px rgba(0, 136, 204, 0.3);
-            border-color: var(--primary);
-        }
-        video {
-            width: 100%;
-            height: auto;
-            display: block;
-            max-height: 70vh;
-            background: #000;
-        }
-        .video-info {
-            padding: 15px 20px;
-            background: var(--bg-card);
-            border-top: 1px solid #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .main-player { background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); margin-bottom: 30px; border: 1px solid #333; }
+        .main-player.cinema-mode { box-shadow: 0 0 50px rgba(0, 136, 204, 0.3); border-color: var(--primary); }
+        video { width: 100%; height: auto; display: block; max-height: 70vh; background: #000; }
+        .video-info { padding: 15px 20px; background: var(--bg-card); border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
         .video-info h2 { font-size: 1.2rem; font-weight: 600; }
-        .badge-resume {
-            background: var(--primary);
-            color: white;
-            font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: 4px;
-            display: none; /* Affiché via JS si reprise */
-        }
+        .badge-resume { background: var(--primary); color: white; font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; display: none; }
 
-        /* --- LISTE DES VIDÉOS --- */
-        .video-list-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-        }
-        .video-count {
-            background: #333;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-        }
+        .video-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .video-count { background: #333; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; }
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 16px;
-        }
-
-        .video-item {
-            background: var(--bg-card);
-            border-radius: 8px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-            border: 2px solid transparent;
-            position: relative;
-        }
-        .video-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-            border-color: var(--primary);
-        }
-        .video-item.active {
-            border-color: var(--primary);
-            background: #252525;
-        }
-        .video-item img {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            object-fit: cover;
-            display: block;
-            background: #111;
-        }
-        /* Barre de progression sur la vignette si déjà vue */
-        .progress-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 4px;
-            background: var(--primary);
-            width: 0%;
-            transition: width 0.3s;
-        }
-        .video-item .title {
-            padding: 10px 12px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #ddd;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.3;
-        }
+        .video-item { background: var(--bg-card); border-radius: 8px; overflow: hidden; cursor: pointer; transition: 0.2s; border: 2px solid transparent; position: relative; }
+        .video-item:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); border-color: var(--primary); }
+        .video-item.active { border-color: var(--primary); background: #252525; }
+        .video-item img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: #111; }
+        .progress-bar { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--primary); width: 0%; transition: width 0.3s; }
+        .video-item .title { padding: 10px 12px; font-size: 0.9rem; font-weight: 500; color: #ddd; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
         .video-item.active .title { color: var(--primary); font-weight: 700; }
 
-        .loading-state, .error-state, .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-muted);
-            grid-column: 1 / -1;
-        }
+        .loading-state, .error-state, .empty-state { text-align: center; padding: 40px; color: var(--text-muted); grid-column: 1 / -1; }
         .error-state { color: #ff6b6b; }
-
-        /* --- SCROLLBAR PERSONNALISÉE --- */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-dark); }
         ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #666; }
-
-        @media (max-width: 600px) {
-            body { padding: 10px; }
-            .video-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .video-info { flex-direction: column; align-items: flex-start; gap: 8px; }
-        }
+        @media (max-width: 600px) { body { padding: 10px; } .video-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } .video-info { flex-direction: column; align-items: flex-start; gap: 8px; } }
     </style>
 </head>
 <body>
 
-    <!-- 1. RECHERCHE -->
     <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" class="search-input" placeholder="Rechercher une vidéo par son titre...">
+        <input type="text" id="searchInput" class="search-input" placeholder="Rechercher une vidéo...">
     </div>
 
-    <!-- 2. LECTEUR VIDÉO -->
     <div class="main-player" id="mainPlayer">
         <video id="mainVideo" controls poster="https://via.placeholder.com/800x450/111111/555555?text=Chargement...">
             <source src="" type="video/mp4">
             Votre navigateur ne supporte pas la lecture vidéo.
         </video>
         <div class="video-info">
-            <h2 id="mainTitle">Sélectionnez une vidéo</h2>
-            <span class="badge-resume" id="resumeBadge">▶ Reprendre la lecture</span>
+            <h2 id="mainTitle">Chargement de votre bibliothèque...</h2>
+            <span class="badge-resume" id="resumeBadge">▶ Reprendre</span>
         </div>
     </div>
 
-    <!-- 3. GRILLE DES VIDÉOS -->
     <div class="video-list-header">
-        <span>📁 Playlist</span>
+        <span>📁 Mes Vidéos Archive.org</span>
         <span class="video-count" id="videoCount">0 vidéo</span>
     </div>
     
     <div class="video-grid" id="videoGrid">
-        <div class="loading-state">⏳ Chargement de la playlist...</div>
+        <div class="loading-state">⏳ Connexion à Archive.org en cours...</div>
     </div>
 
-    <!-- 4. LOGIQUE JAVASCRIPT AVANCÉE -->
     <script>
-        const JSON_URL = 'videos.json';
+        // =====================================================================
+        // ⚙️ CONFIGURATION : REMPLACEZ CECI PAR VOTRE NOM D'UTILISATEUR ARCHIVE.ORG
+        // =====================================================================
+        const ARCHIVE_USERNAME = "Mikeboy58";// Ex: "john_doe_123"
+        const MAX_VIDEOS = 50; // Nombre maximum de vidéos à charger (pour la performance)
+        // =====================================================================
+
         let allVideos = [];
         let currentVideoIndex = -1;
 
-        // --- 1. CHARGEMENT ET AFFICHAGE ---
-        async function chargerPlaylist() {
+        async function chargerDepuisArchive() {
+            const grid = document.getElementById('videoGrid');
+            
             try {
-                const response = await fetch(JSON_URL);
-                if (!response.ok) throw new Error('Fichier videos.json introuvable');
-                allVideos = await response.json();
+                // Requête API officielle d'Internet Archive
+                // On cherche les items de type "movies" (vidéos) uploadés par cet utilisateur, triés par date
+                const apiUrl = `https://archive.org/advancedsearch.php?q=uploader:"${ARCHIVE_USERNAME}"+AND+mediatype:"movies"&fl[]=identifier,title,publicdate&sort[]=-publicdate&output=json&rows=${MAX_VIDEOS}`;
                 
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("Impossible de contacter Archive.org");
+                
+                const data = await response.json();
+                const docs = data.response.docs;
+
+                if (docs.length === 0) {
+                    grid.innerHTML = `<div class="empty-state">Aucune vidéo trouvée pour l'utilisateur "${ARCHIVE_USERNAME}".<br>Vérifiez le nom d'utilisateur dans le code.</div>`;
+                    return;
+                }
+
+                // Transformation des données Archive.org en format utilisable par notre site
+                allVideos = docs.map(doc => {
+                    const identifier = doc.identifier;
+                    return {
+                        id: identifier,
+                        titre: doc.title || identifier,
+                        // On suppose que le fichier vidéo principal a le même nom que le dossier (comportement par défaut d'Archive.org)
+                        video: `https://archive.org/download/${identifier}/${identifier}.mp4`,
+                        vignette: `https://archive.org/download/${identifier}/__ia_thumb.jpg`,
+                        date: doc.publicdate
+                    };
+                });
+
                 document.getElementById('videoCount').textContent = `${allVideos.length} vidéo${allVideos.length > 1 ? 's' : ''}`;
                 afficherGrille(allVideos);
-
-                // Restaurer la dernière session si elle existe
                 restaurerSession();
 
             } catch (error) {
-                document.getElementById('videoGrid').innerHTML = 
-                    `<div class="error-state">❌ Erreur : ${error.message}<br>Vérifiez que le fichier <code>videos.json</code> est à la racine.</div>`;
+                console.error(error);
+                grid.innerHTML = `<div class="error-state">❌ Erreur : ${error.message}</div>`;
             }
         }
 
-        function afficherGrille(videosAafficher) {
+        function afficherGrille(videosAAfficher) {
             const grid = document.getElementById('videoGrid');
             grid.innerHTML = '';
 
-            if (videosAafficher.length === 0) {
+            if (videosAAfficher.length === 0) {
                 grid.innerHTML = '<div class="empty-state">Aucune vidéo ne correspond à votre recherche.</div>';
                 return;
             }
 
-            videosAafficher.forEach((video, index) => {
-                // Trouver l'index original dans allVideos pour la logique de lecture
+            videosAAfficher.forEach((video, index) => {
                 const originalIndex = allVideos.indexOf(video);
-                const vignetteUrl = obtenirVignetteAuto(video.video);
                 const isActive = originalIndex === currentVideoIndex;
-
-                // Vérifier la progression sauvegardée pour cette vidéo
-                const savedTime = localStorage.getItem(`progress_${video.video}`);
-                const progressPercent = savedTime ? 10 : 0; // Affiche une petite barre si déjà vue
+                const savedTime = localStorage.getItem(`progress_${video.id}`);
+                const progressPercent = savedTime ? 15 : 0;
 
                 const item = document.createElement('div');
                 item.className = `video-item ${isActive ? 'active' : ''}`;
                 item.onclick = () => jouerVideo(originalIndex);
 
                 item.innerHTML = `
-                    <img src="${vignetteUrl}" alt="${video.titre}" 
-                         onerror="this.src='https://via.placeholder.com/320x180/222/888?text=Erreur'">
+                    <img src="${video.vignette}" alt="${video.titre}" 
+                         onerror="this.src='https://via.placeholder.com/320x180/222/888?text=Pas+de+vignette'">
                     <div class="progress-bar" style="width: ${progressPercent}%"></div>
                     <div class="title">${video.titre}</div>
                 `;
@@ -271,27 +150,23 @@
             });
         }
 
-        // --- 2. LECTURE ET GESTION ---
         function jouerVideo(index) {
             if (index < 0 || index >= allVideos.length) return;
             
             currentVideoIndex = index;
             const videoData = allVideos[index];
-            const vignetteUrl = obtenirVignetteAuto(videoData.video);
             
             const mainVideo = document.getElementById('mainVideo');
             const mainTitle = document.getElementById('mainTitle');
             const resumeBadge = document.getElementById('resumeBadge');
             const playerContainer = document.getElementById('mainPlayer');
 
-            // Mise à jour UI
             mainTitle.textContent = videoData.titre;
             mainVideo.querySelector('source').src = videoData.video;
-            mainVideo.poster = vignetteUrl;
+            mainVideo.poster = videoData.vignette;
             playerContainer.classList.add('cinema-mode');
 
-            // Gestion de la reprise de lecture
-            const savedTime = localStorage.getItem(`progress_${videoData.video}`);
+            const savedTime = localStorage.getItem(`progress_${videoData.id}`);
             if (savedTime && parseFloat(savedTime) > 5) {
                 resumeBadge.style.display = 'inline-block';
                 resumeBadge.textContent = `▶ Reprendre à ${formatTime(savedTime)}`;
@@ -302,57 +177,51 @@
             }
 
             mainVideo.load();
-            mainVideo.play().catch(() => {}); // Ignore erreur autoplay
+            mainVideo.play().catch(() => {});
 
-            // Mettre à jour la grille (pour la classe 'active')
-            afficherGrille(getFilteredVideos()); // Conserve le filtre de recherche si actif
-            
+            afficherGrille(getFilteredVideos());
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Sauvegarder la dernière vidéo vue
+            localStorage.setItem('lastVideoId', videoData.id);
         }
 
-        // --- 3. SAUVEGARDE DE PROGRESSION (LocalStorage) ---
         function setupProgressSaving() {
             const video = document.getElementById('mainVideo');
-            
-            // Sauvegarder toutes les 5 secondes
             video.addEventListener('timeupdate', () => {
-                if (currentVideoIndex !== -1 && !video.ended) {
-                    localStorage.setItem(`progress_${allVideos[currentVideoIndex].video}`, video.currentTime);
+                if (currentVideoIndex !== -1 && !video.ended && allVideos[currentVideoIndex]) {
+                    localStorage.setItem(`progress_${allVideos[currentVideoIndex].id}`, video.currentTime);
                 }
             });
-
-            // Effacer la progression quand la vidéo est finie
             video.addEventListener('ended', () => {
-                if (currentVideoIndex !== -1) {
-                    localStorage.removeItem(`progress_${allVideos[currentVideoIndex].video}`);
-                    jouerVideoSuivante(); // FEATURE: Auto-play next
+                if (currentVideoIndex !== -1 && allVideos[currentVideoIndex]) {
+                    localStorage.removeItem(`progress_${allVideos[currentVideoIndex].id}`);
+                    if (currentVideoIndex < allVideos.length - 1) jouerVideo(currentVideoIndex + 1);
                 }
             });
         }
 
         function restaurerSession() {
-            const lastVideoUrl = localStorage.getItem('lastVideoUrl');
-            if (lastVideoUrl) {
-                const index = allVideos.findIndex(v => v.video === lastVideoUrl);
+            const lastVideoId = localStorage.getItem('lastVideoId');
+            if (lastVideoId) {
+                const index = allVideos.findIndex(v => v.id === lastVideoId);
                 if (index !== -1) {
-                    // On ne lance pas automatiquement, on prépare juste le lecteur
                     currentVideoIndex = index;
                     const videoData = allVideos[index];
                     document.getElementById('mainTitle').textContent = videoData.titre;
                     document.getElementById('mainVideo').querySelector('source').src = videoData.video;
-                    document.getElementById('mainVideo').poster = obtenirVignetteAuto(videoData.video);
+                    document.getElementById('mainVideo').poster = videoData.vignette;
                     
-                    const savedTime = localStorage.getItem(`progress_${videoData.video}`);
+                    const savedTime = localStorage.getItem(`progress_${videoData.id}`);
                     if (savedTime && parseFloat(savedTime) > 5) {
                         document.getElementById('resumeBadge').style.display = 'inline-block';
-                        document.getElementById('resumeBadge').textContent = `▶ Reprendre la dernière session (${formatTime(savedTime)})`;
+                        document.getElementById('resumeBadge').textContent = `▶ Reprendre la session (${formatTime(savedTime)})`;
                         document.getElementById('mainVideo').currentTime = parseFloat(savedTime);
                     }
                 }
             }
         }
 
-        // --- 4. RECHERCHE EN TEMPS RÉEL ---
         function getFilteredVideos() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             if (!query) return allVideos;
@@ -363,50 +232,15 @@
             afficherGrille(getFilteredVideos());
         });
 
-        // --- 5. RACCOURCIS CLAVIER ---
         document.addEventListener('keydown', (e) => {
-            // Ignorer si l'utilisateur tape dans la barre de recherche
             if (document.activeElement.id === 'searchInput') return;
-
             const video = document.getElementById('mainVideo');
-            
-            switch(e.code) {
-                case 'Space':
-                    e.preventDefault();
-                    video.paused ? video.play() : video.pause();
-                    break;
-                case 'KeyF':
-                    e.preventDefault();
-                    if (document.fullscreenElement) document.exitFullscreen();
-                    else video.requestFullscreen();
-                    break;
-                case 'KeyM':
-                    e.preventDefault();
-                    video.muted = !video.muted;
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    video.currentTime += 10;
-                    break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    video.currentTime -= 10;
-                    break;
-            }
+            if (e.code === 'Space') { e.preventDefault(); video.paused ? video.play() : video.pause(); }
+            if (e.code === 'KeyF') { e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : video.requestFullscreen(); }
+            if (e.code === 'KeyM') { e.preventDefault(); video.muted = !video.muted; }
+            if (e.code === 'ArrowRight') { e.preventDefault(); video.currentTime += 10; }
+            if (e.code === 'ArrowLeft') { e.preventDefault(); video.currentTime -= 10; }
         });
-
-        // --- UTILITAIRES ---
-        function obtenirVignetteAuto(urlVideo) {
-            const match = urlVideo.match(/\/(?:items|download)\/([^\/]+)\//);
-            return match ? `https://archive.org/download/${match[1]}/__ia_thumb.jpg` 
-                         : 'https://via.placeholder.com/320x180/222/888?text=No+Thumb';
-        }
-
-        function jouerVideoSuivante() {
-            if (currentVideoIndex < allVideos.length - 1) {
-                jouerVideo(currentVideoIndex + 1);
-            }
-        }
 
         function formatTime(seconds) {
             const m = Math.floor(seconds / 60);
@@ -414,9 +248,8 @@
             return `${m}m ${s < 10 ? '0' : ''}${s}s`;
         }
 
-        // --- INITIALISATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            chargerPlaylist();
+            chargerDepuisArchive();
             setupProgressSaving();
         });
     </script>
