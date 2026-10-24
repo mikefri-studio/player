@@ -23,27 +23,13 @@
             margin-bottom: 30px;
             border: 1px solid #333;
         }
-        video {
-            width: 100%;
-            height: auto;
-            display: block;
-            max-height: 80vh;
-        }
-        .video-info {
-            padding: 15px 20px;
-            background: #1a1a1a;
-        }
-        .video-info h2 {
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
+        video { width: 100%; height: auto; display: block; max-height: 80vh; }
+        .video-info { padding: 15px 20px; background: #1a1a1a; }
+        .video-info h2 { font-size: 1.2rem; font-weight: 600; }
 
         .video-list-title {
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            color: #aaa;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
+            font-size: 1.1rem; margin-bottom: 15px; color: #aaa;
+            border-bottom: 1px solid #333; padding-bottom: 10px;
         }
         .video-grid {
             display: grid;
@@ -52,54 +38,44 @@
         }
 
         .video-item {
-            background: #1a1a1a;
-            border-radius: 8px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-            border: 2px solid transparent;
+            background: #1a1a1a; border-radius: 8px; overflow: hidden;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            border: 2px solid transparent; position: relative;
         }
         .video-item:hover {
             transform: translateY(-4px);
             box-shadow: 0 6px 16px rgba(0,0,0,0.4);
             border-color: #0088cc;
         }
-        .video-item.active {
-            border-color: #0088cc;
-            background: #252525;
-        }
-        .video-item img {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            object-fit: cover;
-            display: block;
+        .video-item.active { border-color: #0088cc; background: #252525; }
+        
+        .video-item img, .video-item canvas {
+            width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;
         }
         .video-item .title {
-            padding: 10px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #ddd;
+            padding: 10px; font-size: 0.9rem; font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ddd;
         }
-        .video-item.active .title {
-            color: #0088cc;
-            font-weight: 700;
-        }
+        .video-item.active .title { color: #0088cc; font-weight: 700; }
 
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #888;
-            font-size: 1.1rem;
+        /* Indicateur de chargement sur la vignette */
+        .video-item .loading-thumb {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: #1a1a1a; display: flex; align-items: center; justify-content: center;
+            color: #888; font-size: 0.8rem;
         }
+        .video-item .loading-thumb::after {
+            content: ''; width: 20px; height: 20px;
+            border: 2px solid #0088cc; border-top-color: transparent;
+            border-radius: 50%; animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading { text-align: center; padding: 40px; color: #888; font-size: 1.1rem; }
 
         @media (max-width: 600px) {
-            .video-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-            }
+            .video-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             body { padding: 10px; }
         }
     </style>
@@ -107,25 +83,58 @@
 <body>
 
     <div class="main-player">
-        <video id="mainVideo" controls poster="https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Chargement...">
+        <video id="mainVideo" controls poster="">
             <source src="" type="video/mp4">
             Votre navigateur ne supporte pas la lecture vidéo.
         </video>
         <div class="video-info">
-            <h2 id="mainTitle">Chargement de la playlist...</h2>
+            <h2 id="mainTitle">Chargement...</h2>
         </div>
     </div>
 
-    <div class="video-list-title">📁 Playlist (<span id="videoCount">0</span> vidéos)</div>
+    <div class="video-list-title"> Playlist (<span id="videoCount">0</span> vidéos)</div>
     <div class="video-grid" id="videoGrid">
         <div class="loading">⏳ Chargement des vidéos...</div>
     </div>
 
     <script>
-        // URL du fichier JSON (sur le même domaine GitHub)
         const JSON_URL = 'videos.json';
 
-        // Fonction pour charger les vidéos depuis le JSON
+        // Fonction magique : extrait une vignette depuis une vidéo
+        function extraireVignette(urlVideo, timestamp = 5) {
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                video.crossOrigin = 'anonymous'; // Important pour CORS
+                video.preload = 'metadata';
+                
+                video.addEventListener('loadeddata', () => {
+                    // Se placer au timestamp voulu (5 secondes par défaut)
+                    video.currentTime = Math.min(timestamp, video.duration || timestamp);
+                });
+
+                video.addEventListener('seeked', () => {
+                    // Créer un canvas pour capturer la frame
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth || 320;
+                    canvas.height = video.videoHeight || 180;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Convertir en image
+                    try {
+                        const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+                        resolve(dataURL);
+                    } catch (e) {
+                        // Erreur CORS : la vidéo ne permet pas l'extraction
+                        reject(new Error('CORS bloqué'));
+                    }
+                });
+
+                video.addEventListener('error', () => reject(new Error('Vidéo introuvable')));
+                video.src = urlVideo;
+            });
+        }
+
         async function chargerPlaylist() {
             try {
                 const response = await fetch(JSON_URL);
@@ -135,58 +144,90 @@
                 const grid = document.getElementById('videoGrid');
                 const countSpan = document.getElementById('videoCount');
                 countSpan.textContent = videos.length;
-
-                // Vider le message de chargement
                 grid.innerHTML = '';
 
-                // Créer les vignettes dynamiquement
+                // Créer toutes les vignettes d'abord (avec loader)
+                const items = [];
                 videos.forEach((video, index) => {
                     const item = document.createElement('div');
                     item.className = 'video-item' + (index === 0 ? ' active' : '');
-                    item.onclick = () => jouerVideo(video, item);
-
                     item.innerHTML = `
-                        <img src="${video.vignette}" alt="${video.titre}" onerror="this.src='https://via.placeholder.com/320x180/333/fff?text=Pas+de+vignette'">
+                        <div class="loading-thumb">Chargement...</div>
                         <div class="title">${video.titre}</div>
                     `;
                     grid.appendChild(item);
+                    items.push({ item, video, index });
                 });
 
-                // Lancer automatiquement la première vidéo (sans autoplay pour respecter les navigateurs)
+                // Extraire les vignettes en parallèle (max 3 en même temps pour ne pas surcharger)
+                const extraireParLot = async (lots) => {
+                    for (const lot of lots) {
+                        await Promise.all(lot.map(async ({ item, video, index }) => {
+                            try {
+                                const vignette = await extraireVignette(video.video, 5);
+                                // Remplacer le loader par l'image
+                                const loader = item.querySelector('.loading-thumb');
+                                if (loader) {
+                                    const img = document.createElement('img');
+                                    img.src = vignette;
+                                    img.alt = video.titre;
+                                    loader.replaceWith(img);
+                                }
+                                // Si c'est la première vidéo, l'afficher dans le lecteur
+                                if (index === 0) {
+                                    document.getElementById('mainVideo').poster = vignette;
+                                }
+                            } catch (e) {
+                                // En cas d'erreur, afficher une vignette par défaut
+                                const loader = item.querySelector('.loading-thumb');
+                                if (loader) {
+                                    loader.textContent = '';
+                                    loader.style.color = '#ff4444';
+                                }
+                            }
+                        }));
+                    }
+                };
+
+                // Diviser en lots de 3 pour la performance
+                const lots = [];
+                for (let i = 0; i < items.length; i += 3) {
+                    lots.push(items.slice(i, i + 3));
+                }
+                await extraireParLot(lots);
+
+                // Configurer le clic sur chaque vignette
+                items.forEach(({ item, video }) => {
+                    item.onclick = () => {
+                        const player = document.getElementById('mainVideo');
+                        const source = player.querySelector('source');
+                        const titre = document.getElementById('mainTitle');
+                        const img = item.querySelector('img');
+
+                        source.src = video.video;
+                        player.poster = img ? img.src : '';
+                        titre.textContent = video.titre;
+                        player.load();
+                        player.play().catch(e => console.log('Autoplay bloqué'));
+
+                        document.querySelectorAll('.video-item').forEach(i => i.classList.remove('active'));
+                        item.classList.add('active');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+                });
+
+                // Préparer la première vidéo dans le lecteur
                 if (videos.length > 0) {
                     document.getElementById('mainTitle').textContent = videos[0].titre;
                     document.querySelector('#mainVideo source').src = videos[0].video;
-                    document.getElementById('mainVideo').poster = videos[0].vignette;
                 }
 
             } catch (error) {
                 document.getElementById('videoGrid').innerHTML = 
-                    `<div class="loading">❌ Erreur : ${error.message}<br>Vérifiez que le fichier videos.json existe.</div>`;
+                    `<div class="loading">❌ Erreur : ${error.message}</div>`;
             }
         }
 
-        // Fonction pour jouer une vidéo au clic
-        function jouerVideo(video, element) {
-            const player = document.getElementById('mainVideo');
-            const source = player.querySelector('source');
-            const titre = document.getElementById('mainTitle');
-
-            source.src = video.video;
-            player.poster = video.vignette;
-            titre.textContent = video.titre;
-
-            player.load();
-            player.play().catch(e => console.log('Autoplay bloqué'));
-
-            // Mettre à jour la classe active
-            document.querySelectorAll('.video-item').forEach(item => item.classList.remove('active'));
-            element.classList.add('active');
-
-            // Scroll smooth vers le lecteur
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        // Charger la playlist au démarrage
         chargerPlaylist();
     </script>
 
