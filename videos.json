@@ -1,0 +1,17 @@
+[
+  {
+    "titre": "Première vidéo exemple",
+    "video": "https://archive.org/download/VOTRE_DOSSIER_1/video1.mp4",
+    "vignette": "https://archive.org/download/VOTRE_DOSSIER_1/__ia_thumb.jpg"
+  },
+  {
+    "titre": "Deuxième vidéo de la liste",
+    "video": "https://archive.org/download/VOTRE_DOSSIER_2/video2.mp4",
+    "vignette": "https://archive.org/download/VOTRE_DOSSIER_2/__ia_thumb.jpg"
+  },
+  {
+    "titre": "Troisième vidéo exemple",
+    "video": "https://archive.org/download/VOTRE_DOSSIER_3/video3.mp4",
+    "vignette": "https://archive.org/download/VOTRE_DOSSIER_3/__ia_thumb.jpg"
+  }
+]
