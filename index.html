@@ -5,231 +5,273 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ma Galerie Vidéo</title>
     <style>
+        /* --- RESET & STYLE DE BASE --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #0f0f0f;
             color: #ffffff;
             padding: 20px;
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
         }
 
+        /* --- LECTEUR PRINCIPAL --- */
         .main-player {
             background: #000;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
             margin-bottom: 30px;
             border: 1px solid #333;
         }
-        video { width: 100%; height: auto; display: block; max-height: 80vh; }
-        .video-info { padding: 15px 20px; background: #1a1a1a; }
-        .video-info h2 { font-size: 1.2rem; font-weight: 600; }
-
-        .video-list-title {
-            font-size: 1.1rem; margin-bottom: 15px; color: #aaa;
-            border-bottom: 1px solid #333; padding-bottom: 10px;
+        
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: 70vh; /* Ne dépasse pas 70% de la hauteur de l'écran */
+            background: #000;
         }
+        
+        .video-info {
+            padding: 15px 20px;
+            background: #1a1a1a;
+            border-top: 1px solid #333;
+        }
+        
+        .video-info h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* --- LISTE DES VIDÉOS (GRILLE) --- */
+        .video-list-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #aaa;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .video-count {
+            background: #333;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
         .video-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
         }
 
+        /* --- VIGNETTE INDIVIDUELLE --- */
         .video-item {
-            background: #1a1a1a; border-radius: 8px; overflow: hidden;
-            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-            border: 2px solid transparent; position: relative;
+            background: #1a1a1a;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            border: 2px solid transparent;
         }
+        
         .video-item:hover {
             transform: translateY(-4px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
             border-color: #0088cc;
         }
-        .video-item.active { border-color: #0088cc; background: #252525; }
         
-        .video-item img, .video-item canvas {
-            width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;
+        .video-item.active {
+            border-color: #0088cc;
+            background: #252525;
         }
+        
+        .video-item img {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            display: block;
+            background: #111; /* Fond pendant le chargement */
+        }
+        
         .video-item .title {
-            padding: 10px; font-size: 0.9rem; font-weight: 500;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ddd;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #ddd;
+            /* Gestion du texte long sur 2 lignes max */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.3;
         }
-        .video-item.active .title { color: #0088cc; font-weight: 700; }
-
-        /* Indicateur de chargement sur la vignette */
-        .video-item .loading-thumb {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: #1a1a1a; display: flex; align-items: center; justify-content: center;
-            color: #888; font-size: 0.8rem;
+        
+        .video-item.active .title {
+            color: #0088cc;
+            font-weight: 700;
         }
-        .video-item .loading-thumb::after {
-            content: ''; width: 20px; height: 20px;
-            border: 2px solid #0088cc; border-top-color: transparent;
-            border-radius: 50%; animation: spin 1s linear infinite;
-            margin-right: 8px;
+
+        /* --- ÉTATS DE CHARGEMENT ET ERREUR --- */
+        .loading-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-size: 1.1rem;
+            grid-column: 1 / -1;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .loading { text-align: center; padding: 40px; color: #888; font-size: 1.1rem; }
+        .error-state {
+            text-align: center;
+            padding: 40px;
+            color: #ff6b6b;
+            grid-column: 1 / -1;
+        }
 
+        /* --- RESPONSIVE MOBILE --- */
         @media (max-width: 600px) {
-            .video-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             body { padding: 10px; }
+            .video-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 colonnes sur mobile */
+                gap: 10px;
+            }
+            .video-info h2 { font-size: 1rem; }
         }
     </style>
 </head>
 <body>
 
+    <!-- 1. LECTEUR VIDÉO PRINCIPAL -->
     <div class="main-player">
-        <video id="mainVideo" controls poster="">
+        <video id="mainVideo" controls poster="https://via.placeholder.com/800x450/111111/555555?text=Chargement...">
             <source src="" type="video/mp4">
-            Votre navigateur ne supporte pas la lecture vidéo.
+            Votre navigateur ne supporte pas la lecture de vidéos HTML5.
         </video>
         <div class="video-info">
-            <h2 id="mainTitle">Chargement...</h2>
-        </div>
+            <h2 id="mainTitle">Sélectionnez une vidéo ci-dessous</h2>
+        </div.>
     </div>
 
-    <div class="video-list-title"> Playlist (<span id="videoCount">0</span> vidéos)</div>
+    <!-- 2. GRILLE DES VIDÉOS -->
+    <div class="video-list-title">
+        <span>📁 Playlist</span>
+        <span class="video-count" id="videoCount">0 vidéo</span>
+    </div>
+    
     <div class="video-grid" id="videoGrid">
-        <div class="loading">⏳ Chargement des vidéos...</div>
+        <div class="loading-state">⏳ Chargement de la playlist...</div.>
     </div>
 
+    <!-- 3. LOGIQUE JAVASCRIPT -->
     <script>
-        const JSON_URL = 'videos.json';
+        const JSON_URL = 'videos.json'; // Le fichier contenant vos données
 
-        // Fonction magique : extrait une vignette depuis une vidéo
-        function extraireVignette(urlVideo, timestamp = 5) {
-            return new Promise((resolve, reject) => {
-                const video = document.createElement('video');
-                video.crossOrigin = 'anonymous'; // Important pour CORS
-                video.preload = 'metadata';
-                
-                video.addEventListener('loadeddata', () => {
-                    // Se placer au timestamp voulu (5 secondes par défaut)
-                    video.currentTime = Math.min(timestamp, video.duration || timestamp);
-                });
-
-                video.addEventListener('seeked', () => {
-                    // Créer un canvas pour capturer la frame
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth || 320;
-                    canvas.height = video.videoHeight || 180;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
-                    // Convertir en image
-                    try {
-                        const dataURL = canvas.toDataURL('image/jpeg', 0.8);
-                        resolve(dataURL);
-                    } catch (e) {
-                        // Erreur CORS : la vidéo ne permet pas l'extraction
-                        reject(new Error('CORS bloqué'));
-                    }
-                });
-
-                video.addEventListener('error', () => reject(new Error('Vidéo introuvable')));
-                video.src = urlVideo;
-            });
+        /**
+         * Extrait automatiquement le nom du dossier Internet Archive 
+         * pour construire le lien de la vignette (__ia_thumb.jpg)
+         */
+        function obtenirVignetteAuto(urlVideo) {
+            // Cherche "/items/NOM_DU_DOSSIER/" ou "/download/NOM_DU_DOSSIER/" dans l'URL
+            const match = urlVideo.match(/\/(?:items|download)\/([^\/]+)\//);
+            if (match && match[1]) {
+                return `https://archive.org/download/${match[1]}/__ia_thumb.jpg`;
+            }
+            // Fallback si le format de l'URL est différent
+            return 'https://via.placeholder.com/320x180/222222/888888?text=Pas+de+vignette';
         }
 
+        /**
+         * Charge les données du JSON et construit la grille
+         */
         async function chargerPlaylist() {
+            const grid = document.getElementById('videoGrid');
+            const countSpan = document.getElementById('videoCount');
+            const mainVideo = document.getElementById('mainVideo');
+            const mainTitle = document.getElementById('mainTitle');
+
             try {
                 const response = await fetch(JSON_URL);
-                if (!response.ok) throw new Error('Fichier JSON introuvable');
+                if (!response.ok) throw new Error('Impossible de lire le fichier videos.json');
+                
                 const videos = await response.json();
+                
+                if (videos.length === 0) {
+                    grid.innerHTML = '<div class="loading-state">Aucune vidéo dans la playlist.</div>';
+                    return;
+                }
 
-                const grid = document.getElementById('videoGrid');
-                const countSpan = document.getElementById('videoCount');
-                countSpan.textContent = videos.length;
-                grid.innerHTML = '';
+                countSpan.textContent = `${videos.length} vidéo${videos.length > 1 ? 's' : ''}`;
+                grid.innerHTML = ''; // Vider le message de chargement
 
-                // Créer toutes les vignettes d'abord (avec loader)
-                const items = [];
+                // Créer les éléments de la grille
                 videos.forEach((video, index) => {
+                    const vignetteUrl = obtenirVignetteAuto(video.video);
+                    const isActive = index === 0; // La première est active par défaut
+
                     const item = document.createElement('div');
-                    item.className = 'video-item' + (index === 0 ? ' active' : '');
+                    item.className = `video-item ${isActive ? 'active' : ''}`;
+                    item.onclick = () => jouerVideo(video, vignetteUrl, item);
+
                     item.innerHTML = `
-                        <div class="loading-thumb">Chargement...</div>
+                        <img src="${vignetteUrl}" alt="${video.titre}" 
+                             onerror="this.src='https://via.placeholder.com/320x180/222222/888888?text=Erreur+image'">
                         <div class="title">${video.titre}</div>
                     `;
                     grid.appendChild(item);
-                    items.push({ item, video, index });
-                });
 
-                // Extraire les vignettes en parallèle (max 3 en même temps pour ne pas surcharger)
-                const extraireParLot = async (lots) => {
-                    for (const lot of lots) {
-                        await Promise.all(lot.map(async ({ item, video, index }) => {
-                            try {
-                                const vignette = await extraireVignette(video.video, 5);
-                                // Remplacer le loader par l'image
-                                const loader = item.querySelector('.loading-thumb');
-                                if (loader) {
-                                    const img = document.createElement('img');
-                                    img.src = vignette;
-                                    img.alt = video.titre;
-                                    loader.replaceWith(img);
-                                }
-                                // Si c'est la première vidéo, l'afficher dans le lecteur
-                                if (index === 0) {
-                                    document.getElementById('mainVideo').poster = vignette;
-                                }
-                            } catch (e) {
-                                // En cas d'erreur, afficher une vignette par défaut
-                                const loader = item.querySelector('.loading-thumb');
-                                if (loader) {
-                                    loader.textContent = '';
-                                    loader.style.color = '#ff4444';
-                                }
-                            }
-                        }));
+                    // Préparer la première vidéo dans le lecteur (sans la lancer automatiquement)
+                    if (isActive) {
+                        mainTitle.textContent = video.titre;
+                        mainVideo.querySelector('source').src = video.video;
+                        mainVideo.poster = vignetteUrl;
+                        mainVideo.load(); // Précharge les métadonnées
                     }
-                };
-
-                // Diviser en lots de 3 pour la performance
-                const lots = [];
-                for (let i = 0; i < items.length; i += 3) {
-                    lots.push(items.slice(i, i + 3));
-                }
-                await extraireParLot(lots);
-
-                // Configurer le clic sur chaque vignette
-                items.forEach(({ item, video }) => {
-                    item.onclick = () => {
-                        const player = document.getElementById('mainVideo');
-                        const source = player.querySelector('source');
-                        const titre = document.getElementById('mainTitle');
-                        const img = item.querySelector('img');
-
-                        source.src = video.video;
-                        player.poster = img ? img.src : '';
-                        titre.textContent = video.titre;
-                        player.load();
-                        player.play().catch(e => console.log('Autoplay bloqué'));
-
-                        document.querySelectorAll('.video-item').forEach(i => i.classList.remove('active'));
-                        item.classList.add('active');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    };
                 });
-
-                // Préparer la première vidéo dans le lecteur
-                if (videos.length > 0) {
-                    document.getElementById('mainTitle').textContent = videos[0].titre;
-                    document.querySelector('#mainVideo source').src = videos[0].video;
-                }
 
             } catch (error) {
-                document.getElementById('videoGrid').innerHTML = 
-                    `<div class="loading">❌ Erreur : ${error.message}</div>`;
+                console.error(error);
+                grid.innerHTML = `<div class="error-state">❌ Erreur : ${error.message}<br>Vérifiez que le fichier <code>videos.json</code> est bien présent.</div>`;
             }
         }
 
-        chargerPlaylist();
-    </script>
+        /**
+         * Change la vidéo en cours de lecture au clic sur une vignette
+         */
+        function jouerVideo(videoData, vignetteUrl, elementClique) {
+            const mainVideo = document.getElementById('mainVideo');
+            const source = mainVideo.querySelector('source');
+            const mainTitle = document.getElementById('mainTitle');
 
+            // Mise à jour des sources
+            source.src = videoData.video;
+            mainVideo.poster = vignetteUrl;
+            mainTitle.textContent = videoData.titre;
+
+            // Rechargement et lecture
+            mainVideo.load();
+            mainVideo.play().catch(e => {
+                // Ignore l'erreur si le navigateur bloque l'autoplay (comportement normal)
+                console.log("Lecture automatique bloquée par le navigateur, l'utilisateur doit cliquer sur Play.");
+            });
+
+            // Mise à jour visuelle de la grille (classe 'active')
+            document.querySelectorAll('.video-item').forEach(item => item.classList.remove('active'));
+            elementClique.classList.add('active');
+
+            // Remonter doucement vers le lecteur vidéo (très utile sur mobile)
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Lancer le chargement au démarrage de la page
+        document.addEventListener('DOMContentLoaded', chargerPlaylist);
+    </script>
 </body>
 </html>
