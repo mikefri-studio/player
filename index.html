@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ma Galerie Vidéo Premium</title>
+    <title>Ma Galerie Vidéo Ultimate</title>
     <style>
         :root {
-            --primary: #0088cc;
-            --primary-glow: rgba(0, 136, 204, 0.3);
+            --primary: #e50914; /* Rouge style Netflix pour le "Wow" */
+            --primary-glow: rgba(229, 9, 20, 0.4);
             --bg-dark: #0f0f0f;
-            --bg-card: #1a1a1a;
+            --bg-card: #181818;
             --text-main: #ffffff;
             --text-muted: #aaaaaa;
         }
@@ -21,76 +21,128 @@
             background-color: var(--bg-dark);
             color: var(--text-main);
             padding: 20px;
-            max-width: 1200px;
+            max-width: 1300px;
             margin: 0 auto;
             animation: fadeIn 0.6s ease-out;
+            position: relative;
+            z-index: 1;
         }
 
+        /* --- EFFET AMBILIGHT (Fond dynamique) --- */
+        .ambilight-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover;
+            background-position: center;
+            filter: blur(80px) brightness(0.3);
+            z-index: -1;
+            transition: background-image 0.8s ease-in-out;
+            opacity: 0;
+        }
+        .ambilight-bg.active { opacity: 1; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { background-color: #1a1a1a; } 50% { background-color: #2a2a2a; } }
+        @keyframes pulse { 0%, 100% { background-color: #181818; } 50% { background-color: #252525; } }
         @keyframes slideUp { from { transform: translate(-50%, 100px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
         @keyframes slideDown { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, 100px); opacity: 0; } }
+        @keyframes heartBeat { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
         /* --- RECHERCHE --- */
         .search-container { margin-bottom: 20px; position: relative; }
         .search-input {
-            width: 100%; padding: 12px 20px 12px 45px; background: var(--bg-card);
-            border: 1px solid #333; border-radius: 25px; color: white; font-size: 1rem;
-            outline: none; transition: 0.3s;
+            width: 100%; padding: 14px 20px 14px 45px; background: rgba(24, 24, 24, 0.8);
+            border: 1px solid #333; border-radius: 8px; color: white; font-size: 1rem;
+            outline: none; transition: 0.3s; backdrop-filter: blur(10px);
         }
-        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 20px var(--primary-glow); }
         .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+        .search-shortcut {
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            background: #333; color: #aaa; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;
+            border: 1px solid #444;
+        }
+
+        /* --- CONTINUE WATCHING (NETFLIX STYLE) --- */
+        .continue-watching-section {
+            margin-bottom: 30px;
+            display: none; /* Caché par défaut, affiché via JS si besoin */
+        }
+        .continue-watching-section.visible { display: block; animation: fadeIn 0.5s ease; }
+        .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: #fff; display: flex; align-items: center; gap: 8px; }
+        
+        .horizontal-scroll {
+            display: flex; gap: 12px; overflow-x: auto; padding-bottom: 15px;
+            scroll-behavior: smooth;
+        }
+        .horizontal-scroll::-webkit-scrollbar { height: 6px; }
+        .horizontal-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        
+        .hw-item {
+            min-width: 280px; background: var(--bg-card); border-radius: 6px; overflow: hidden;
+            cursor: pointer; transition: transform 0.2s; position: relative; flex-shrink: 0;
+        }
+        .hw-item:hover { transform: scale(1.05); z-index: 10; }
+        .hw-item img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+        .hw-progress {
+            position: absolute; bottom: 0; left: 0; height: 4px; background: var(--primary); width: 0%;
+        }
+        .hw-title { padding: 8px 10px; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* --- LECTEUR --- */
         .main-player {
             background: #000; border-radius: 12px; overflow: hidden;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8); margin-bottom: 20px;
-            border: 1px solid #333; transition: all 0.4s ease;
+            border: 1px solid #333; transition: all 0.4s ease; position: relative;
         }
         .main-player.cinema-mode {
-            box-shadow: 0 0 60px var(--primary-glow); border-color: var(--primary);
+            box-shadow: 0 0 80px var(--primary-glow); border-color: var(--primary);
             max-width: 100vw; margin: 0 -20px 30px -20px;
         }
         video { width: 100%; height: auto; display: block; max-height: 70vh; background: #000; }
         
         .video-info {
-            padding: 15px 20px; background: var(--bg-card); border-top: 1px solid #333;
+            padding: 15px 20px; background: rgba(24, 24, 24, 0.9); border-top: 1px solid #333;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+            backdrop-filter: blur(10px);
         }
-        .video-info h2 { font-size: 1.2rem; font-weight: 600; flex: 1; }
+        .video-info h2 { font-size: 1.3rem; font-weight: 600; flex: 1; }
         .badge-resume {
             background: var(--primary); color: white; font-size: 0.75rem;
-            padding: 4px 8px; border-radius: 4px; display: none; white-space: nowrap;
+            padding: 4px 10px; border-radius: 4px; display: none; white-space: nowrap; font-weight: 600;
         }
 
         /* --- ACTIONS RAPIDES --- */
-        .quick-actions {
-            display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
-        }
+        .quick-actions { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; align-items: center; }
         .btn-action {
             background: #333; color: white; border: none; padding: 10px 18px;
-            border-radius: 25px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
-            transition: transform 0.2s, background 0.2s; display: flex; align-items: center; gap: 6px;
+            border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+            transition: 0.2s; display: flex; align-items: center; gap: 6px;
         }
-        .btn-action:hover { transform: translateY(-2px); background: #444; }
-        .btn-shuffle { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .btn-share { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .btn-action:hover { background: #444; transform: translateY(-1px); }
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: #f40612; }
         .stats-display { color: var(--text-muted); font-size: 0.85rem; margin-left: auto; }
 
-        /* --- GRILLE --- */
+        /* --- GRILLE PRINCIPALE --- */
         .video-list-header {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;
         }
-        .video-count { background: #333; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; }
-        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .filter-tabs { display: flex; gap: 10px; }
+        .filter-tab {
+            background: transparent; border: 1px solid #444; color: #aaa; padding: 6px 14px;
+            border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: 0.2s;
+        }
+        .filter-tab.active, .filter-tab:hover { background: #fff; color: #000; border-color: #fff; }
+
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
 
         .video-item {
             background: var(--bg-card); border-radius: 8px; overflow: hidden;
-            cursor: pointer; transition: 0.2s; border: 2px solid transparent; position: relative;
+            cursor: pointer; transition: 0.2s; position: relative; group: hover;
         }
-        .video-item:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); border-color: var(--primary); }
-        .video-item.active { border-color: var(--primary); background: #252525; }
+        .video-item:hover { transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.6); }
+        .video-item.active { outline: 2px solid var(--primary); outline-offset: 2px; }
         
         .video-item img {
             width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;
@@ -98,54 +150,73 @@
         }
         .video-item:hover img { transform: scale(1.05); }
         
+        /* Bouton Favori */
+        .fav-btn {
+            position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7);
+            border: none; color: white; width: 32px; height: 32px; border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; transition: 0.2s; z-index: 5; opacity: 0;
+        }
+        .video-item:hover .fav-btn { opacity: 1; }
+        .fav-btn.is-fav { color: var(--primary); opacity: 1; animation: heartBeat 0.3s ease; }
+        .fav-btn:hover { background: rgba(255,255,255,0.2); }
+
         .progress-bar {
             position: absolute; bottom: 0; left: 0; height: 4px;
             background: var(--primary); width: 0%; transition: width 0.3s; z-index: 2;
         }
         .video-item .title {
-            padding: 10px 12px; font-size: 0.9rem; font-weight: 500; color: #ddd;
+            padding: 12px; font-size: 0.9rem; font-weight: 500; color: #ddd;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
             overflow: hidden; line-height: 1.3;
         }
-        .video-item.active .title { color: var(--primary); font-weight: 700; }
+        .video-item.active .title { color: #fff; font-weight: 700; }
 
-        /* --- ÉTATS & TOAST --- */
         .loading-state, .error-state, .empty-state {
             text-align: center; padding: 40px; color: var(--text-muted); grid-column: 1 / -1;
         }
-        .error-state { color: #ff6b6b; }
-        
         .skeleton {
-            background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+            background: linear-gradient(90deg, #181818 25%, #252525 50%, #181818 75%);
             background-size: 200% 100%; animation: pulse 1.5s infinite; border-radius: 8px; height: 180px;
         }
 
         .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 24px;
+            background: rgba(24, 24, 24, 0.95); color: white; padding: 12px 24px;
             border-radius: 8px; border-left: 4px solid var(--primary); z-index: 10000;
-            animation: slideUp 0.3s ease; font-weight: 500; backdrop-filter: blur(5px);
+            animation: slideUp 0.3s ease; font-weight: 500; backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-dark); }
         ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #666; }
 
         @media (max-width: 600px) {
             body { padding: 10px; }
-            .video-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .video-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
             .video-info { flex-direction: column; align-items: flex-start; }
             .quick-actions { justify-content: center; }
             .stats-display { margin-left: 0; width: 100%; text-align: center; margin-top: 5px; }
+            .search-shortcut { display: none; }
         }
     </style>
 </head>
 <body>
 
+    <!-- Fond Ambilight -->
+    <div class="ambilight-bg" id="ambilightBg"></div>
+
     <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" class="search-input" placeholder="Rechercher une vidéo par titre...">
+        <input type="text" id="searchInput" class="search-input" placeholder="Rechercher un titre...">
+        <span class="search-shortcut">Ctrl K</span>
+    </div>
+
+    <!-- Section Reprendre la lecture (Netflix Style) -->
+    <div class="continue-watching-section" id="continueSection">
+        <div class="section-title">▶ Reprendre la lecture</div>
+        <div class="horizontal-scroll" id="continueScroll"></div>
     </div>
 
     <div class="main-player" id="mainPlayer">
@@ -161,18 +232,22 @@
     </div>
 
     <div class="quick-actions">
-        <button class="btn-action btn-shuffle" onclick="jouerVideoAleatoire()">🎲 Aléatoire</button>
-        <button class="btn-action btn-share" onclick="genererLienPartage()">🔗 Partager</button>
-        <div class="stats-display" id="statsDisplay">📊 Calcul des stats...</div>
+        <button class="btn-action btn-primary" onclick="jouerVideoAleatoire()">🎲 Aléatoire</button>
+        <button class="btn-action" onclick="genererLienPartage()">🔗 Partager</button>
+        <div class="stats-display" id="statsDisplay">📊 Calcul des stats...</div.>
     </div>
 
     <div class="video-list-header">
-        <span>📁 Bibliothèque (JSON + Archive.org)</span>
-        <span class="video-count" id="videoCount">0 vidéo</span>
+        <span>📁 Bibliothèque</span>
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filtrer('all', this)">Toutes</button>
+            <button class="filter-tab" onclick="filtrer('favorites', this)">❤️ Favoris</button>
+        </div>
     </div>
     
     <div class="video-grid" id="videoGrid">
-        <!-- Les squelettes de chargement seront injectés ici -->
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
     </div>
 
     <script>
@@ -180,6 +255,7 @@
         const MAX_VIDEOS = 100;
         let allVideos = [];
         let currentVideoIndex = -1;
+        let favorites = JSON.parse(localStorage.getItem('myFavorites') || '[]');
         let playbackSpeeds = [0.5, 1, 1.25, 1.5, 2];
         let currentSpeedIndex = 1;
 
@@ -199,7 +275,6 @@
         function showToast(message, duree = 3000) {
             const existing = document.querySelector('.toast');
             if (existing) existing.remove();
-            
             const toast = document.createElement('div');
             toast.className = 'toast';
             toast.textContent = message;
@@ -225,11 +300,35 @@
             document.getElementById('statsDisplay').textContent = `📊 ${stats.videosWatched} vidéos vues (${h}h ${m}min)`;
         }
 
+        function toggleFavorite(videoUrl, event) {
+            if(event) event.stopPropagation(); // Empêche de lancer la vidéo en cliquant sur le cœur
+            
+            const index = favorites.indexOf(videoUrl);
+            if (index === -1) {
+                favorites.push(videoUrl);
+                showToast("❤️ Ajouté aux favoris");
+            } else {
+                favorites.splice(index, 1);
+                showToast("Retiré des favoris");
+            }
+            localStorage.setItem('myFavorites', JSON.stringify(favorites));
+            
+            // Mettre à jour l'UI
+            document.querySelectorAll('.fav-btn').forEach(btn => {
+                if (btn.dataset.url === videoUrl) {
+                    btn.classList.toggle('is-fav', favorites.includes(videoUrl));
+                    btn.innerHTML = favorites.includes(videoUrl) ? '❤️' : '🤍';
+                }
+            });
+            
+            // Si on est en mode filtre favoris, rafraîchir la grille
+            if (document.querySelector('.filter-tab.active').textContent.includes('Favoris')) {
+                filtrer('favorites', document.querySelector('.filter-tab.active'));
+            }
+        }
+
         // --- CHARGEMENT DES DONNÉES ---
         async function chargerToutesLesVideos() {
-            const grid = document.getElementById('videoGrid');
-            // Afficher des squelettes de chargement
-            grid.innerHTML = Array(6).fill('<div class="skeleton"></div>').join('');
             let combinedVideos = [];
 
             try {
@@ -245,7 +344,7 @@
                             source: 'json'
                         }))];
                     }
-                } catch (e) { console.log("ℹ️ Pas de videos.json, suite avec Archive.org"); }
+                } catch (e) { console.log("ℹ️ Pas de videos.json"); }
 
                 // 2. ARCHIVE.ORG
                 const apiUrl = `https://archive.org/advancedsearch.php?q=uploader:"${ARCHIVE_USERNAME}"&fl[]=identifier,title,publicdate&sort[]=-publicdate&output=json&rows=${MAX_VIDEOS}`;
@@ -281,7 +380,7 @@
                     }
                 }
 
-                // 3. DÉDOUBLONNAGE (Clé unique = URL de la vidéo)
+                // 3. DÉDOUBLONNAGE
                 const uniqueMap = new Map();
                 for (const v of combinedVideos) {
                     if (!uniqueMap.has(v.video)) uniqueMap.set(v.video, v);
@@ -292,51 +391,94 @@
                     return 0;
                 });
 
-                if (allVideos.length === 0) {
-                    grid.innerHTML = `<div class="empty-state">Aucune vidéo trouvée. Vérifiez videos.json ou attendez l'indexation Archive.org.</div>`;
-                    return;
-                }
-
-                document.getElementById('videoCount').textContent = `${allVideos.length} vidéo${allVideos.length > 1 ? 's' : ''}`;
+                document.getElementById('videoCount')?.remove(); // Nettoyage si présent
                 afficherGrille(allVideos);
+                genererContinueWatching();
                 restaurerSession();
                 afficherStats();
 
             } catch (error) {
                 console.error(error);
-                grid.innerHTML = `<div class="error-state">❌ Erreur : ${error.message}</div>`;
+                document.getElementById('videoGrid').innerHTML = `<div class="error-state">❌ Erreur : ${error.message}</div>`;
             }
         }
 
-        // --- AFFICHAGE ---
+        // --- FONCTIONNALITÉS INTELLIGENTES ---
+        function genererContinueWatching() {
+            const section = document.getElementById('continueSection');
+            const scrollContainer = document.getElementById('continueScroll');
+            scrollContainer.innerHTML = '';
+            let hasItems = false;
+
+            allVideos.forEach(video => {
+                const savedTime = localStorage.getItem(`progress_${video.video}`);
+                if (savedTime && parseFloat(savedTime) > 10) {
+                    hasItems = true;
+                    const div = document.createElement('div');
+                    div.className = 'hw-item';
+                    div.onclick = () => {
+                        const idx = allVideos.indexOf(video);
+                        jouerVideo(idx);
+                    };
+                    
+                    // Calcul approximatif du pourcentage (basé sur une durée moyenne estimée ou lue si possible)
+                    // Ici on met juste une barre visuelle fixe à 30% pour l'effet "en cours"
+                    div.innerHTML = `
+                        <img src="${video.vignette}" alt="${video.titre}">
+                        <div class="hw-progress" style="width: 30%"></div>
+                        <div class="hw-title">${video.titre}</div>
+                    `;
+                    scrollContainer.appendChild(div);
+                }
+            });
+
+            if (hasItems) {
+                section.classList.add('visible');
+            }
+        }
+
+        function filtrer(type, btnElement) {
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            if (type === 'all') {
+                afficherGrille(allVideos);
+            } else if (type === 'favorites') {
+                const favVideos = allVideos.filter(v => favorites.includes(v.video));
+                afficherGrille(favVideos);
+            }
+        }
+
         function afficherGrille(videosAAfficher) {
             const grid = document.getElementById('videoGrid');
             grid.innerHTML = '';
             if (videosAAfficher.length === 0) {
-                grid.innerHTML = '<div class="empty-state">Aucun résultat pour cette recherche.</div>';
+                grid.innerHTML = '<div class="empty-state">Aucun résultat pour cette sélection.</div>';
                 return;
             }
 
-            videosAAfficher.forEach((video, index) => {
+            videosAAfficher.forEach((video) => {
                 const originalIndex = allVideos.indexOf(video);
                 const isActive = originalIndex === currentVideoIndex;
                 const savedTime = localStorage.getItem(`progress_${video.video}`);
-                const progressPercent = savedTime ? Math.min((parseFloat(savedTime) / 600) * 100, 100) : 0; // Estimation sur 10min pour la barre
+                const isFav = favorites.includes(video.video);
 
                 const item = document.createElement('div');
                 item.className = `video-item ${isActive ? 'active' : ''}`;
                 item.onclick = () => jouerVideo(originalIndex);
 
                 item.innerHTML = `
+                    <button class="fav-btn ${isFav ? 'is-fav' : ''}" data-url="${video.video}" onclick="toggleFavorite('${video.video}', event)">
+                        ${isFav ? '❤️' : '🤍'}
+                    </button>
                     <img src="${video.vignette}" alt="${video.titre}" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180/222/888?text=Erreur'">
-                    <div class="progress-bar" style="width: ${progressPercent}%"></div>
+                    <div class="progress-bar" style="width: ${savedTime ? '30%' : '0%'}"></div>
                     <div class="title">${video.titre}</div>
                 `;
                 grid.appendChild(item);
             });
         }
 
-        // --- LECTURE ---
         function jouerVideo(index) {
             if (index < 0 || index >= allVideos.length) return;
             currentVideoIndex = index;
@@ -345,11 +487,16 @@
             const mainVideo = document.getElementById('mainVideo');
             const mainTitle = document.getElementById('mainTitle');
             const resumeBadge = document.getElementById('resumeBadge');
+            const ambilight = document.getElementById('ambilightBg');
+
+            // Mise à jour Ambilight
+            ambilight.style.backgroundImage = `url('${videoData.vignette}')`;
+            ambilight.classList.add('active');
 
             mainTitle.textContent = videoData.titre;
             mainVideo.querySelector('source').src = videoData.video;
             mainVideo.poster = videoData.vignette;
-            mainVideo.playbackRate = playbackSpeeds[currentSpeedIndex]; // Garder la vitesse choisie
+            mainVideo.playbackRate = playbackSpeeds[currentSpeedIndex];
 
             const savedTime = localStorage.getItem(`progress_${videoData.video}`);
             if (savedTime && parseFloat(savedTime) > 5) {
@@ -364,7 +511,10 @@
             mainVideo.load();
             mainVideo.play().catch(() => {});
             
-            afficherGrille(getFilteredVideos());
+            // Mettre à jour la grille pour montrer le cadre "active"
+            const currentFilter = document.querySelector('.filter-tab.active').textContent.includes('Favoris') ? 'favorites' : 'all';
+            filtrer(currentFilter, document.querySelector('.filter-tab.active'));
+            
             window.scrollTo({ top: 0, behavior: 'smooth' });
             localStorage.setItem('lastVideoUrl', videoData.video);
         }
@@ -380,6 +530,7 @@
                 if (currentVideoIndex !== -1 && allVideos[currentVideoIndex]) {
                     localStorage.removeItem(`progress_${allVideos[currentVideoIndex].video}`);
                     mettreAJourStats(video.duration);
+                    genererContinueWatching(); // Mettre à jour la rangée du haut
                     if (currentVideoIndex < allVideos.length - 1) {
                         showToast("⏭️ Lecture de la vidéo suivante...");
                         setTimeout(() => jouerVideo(currentVideoIndex + 1), 1500);
@@ -398,6 +549,8 @@
                     document.getElementById('mainTitle').textContent = v.titre;
                     document.getElementById('mainVideo').querySelector('source').src = v.video;
                     document.getElementById('mainVideo').poster = v.vignette;
+                    document.getElementById('ambilightBg').style.backgroundImage = `url('${v.vignette}')`;
+                    document.getElementById('ambilightBg').classList.add('active');
                     
                     const savedTime = localStorage.getItem(`progress_${v.video}`);
                     if (savedTime && parseFloat(savedTime) > 5) {
@@ -409,12 +562,11 @@
             }
         }
 
-        // --- FONCTIONNALITÉS INTELLIGENTES ---
         function jouerVideoAleatoire() {
             if (allVideos.length === 0) return;
             const rnd = Math.floor(Math.random() * allVideos.length);
             jouerVideo(rnd);
-            showToast(`🎲 Lecture aléatoire : ${allVideos[rnd].titre}`);
+            showToast(`🎲 Lecture aléatoire`);
         }
 
         function genererLienPartage() {
@@ -447,16 +599,20 @@
             showToast(p.classList.contains('cinema-mode') ? "🎬 Mode cinéma activé" : "Mode cinéma désactivé");
         }
 
-        function getFilteredVideos() {
-            const q = document.getElementById('searchInput').value.toLowerCase();
-            return q ? allVideos.filter(v => v.titre.toLowerCase().includes(q)) : allVideos;
-        }
-
-        // --- ÉVÉNEMENTS ---
-        document.getElementById('searchInput').addEventListener('input', () => afficherGrille(getFilteredVideos()));
-
+        // --- ÉVÉNEMENTS CLAVIER ---
         document.addEventListener('keydown', (e) => {
-            if (document.activeElement.id === 'searchInput') return;
+            if (document.activeElement.id === 'searchInput') {
+                if (e.key === 'Escape') document.activeElement.blur();
+                return;
+            }
+            
+            // Ctrl+K ou Cmd+K pour la recherche
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+                return;
+            }
+
             const v = document.getElementById('mainVideo');
             if (e.code === 'Space') { e.preventDefault(); v.paused ? v.play() : v.pause(); }
             if (e.code === 'KeyF') { e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : v.requestFullscreen(); }
@@ -470,6 +626,15 @@
                 v.playbackRate = playbackSpeeds[currentSpeedIndex];
                 showToast(`⏩ Vitesse : ${playbackSpeeds[currentSpeedIndex]}x`);
             }
+        });
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase();
+            const filtered = allVideos.filter(v => v.titre.toLowerCase().includes(q));
+            // Si on cherche, on passe en mode "Toutes" pour voir les résultats
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.filter-tab').classList.add('active'); // Le premier est "Toutes"
+            afficherGrille(filtered);
         });
 
         // --- INITIALISATION ---
