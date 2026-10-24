@@ -231,7 +231,7 @@
     <div class="ambilight-bg" id="ambilightBg"></div>
 
     <div class="top-bar">
-        <h1 style="font-size: 1.5rem; font-weight: 700;">🎬 Ma Galerie</h1>
+        <h1 style="font-size: 1.5rem; font-weight: 700;">🎬 Rainbow Cinema</h1>
         <div style="display: flex; gap: 10px;">
             <button class="theme-toggle" onclick="toggleTheme()">🌓 Thème</button>
             <button class="settings-btn" onclick="openSettings()">⚙️ Paramètres</button>
@@ -760,7 +760,7 @@
         function updateMediaSession() {
             if (currentVideoIndex === -1 || !('mediaSession' in navigator) || !allVideos[currentVideoIndex]) return;
             const v = allVideos[currentVideoIndex];
-            navigator.mediaSession.metadata = new MediaMetadata({ title: v.titre, artist: 'Ma Galerie', artwork: [{ src: v.vignette, sizes: '512x512', type: 'image/jpeg' }] });
+            navigator.mediaSession.metadata = new MediaMetadata({ title: v.titre, artist: 'Rainbow Cinema', artwork: [{ src: v.vignette, sizes: '512x512', type: 'image/jpeg' }] });
         }
         if ('mediaSession' in navigator) {
             navigator.mediaSession.setActionHandler('play', () => document.getElementById('mainVideo').play());
