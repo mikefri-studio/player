@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ma Galerie Vidéo - God Mode</title>
+    <title>Ma Galerie Vidéo - Ultimate</title>
+    <meta name="theme-color" content="#e50914">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
     <style>
         :root {
             --primary: #e50914;
@@ -13,15 +16,21 @@
             --text-main: #ffffff;
             --text-muted: #aaaaaa;
         }
+        [data-theme="light"] {
+            --bg-dark: #f5f5f5;
+            --bg-card: #ffffff;
+            --text-main: #1a1a1a;
+            --text-muted: #666666;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-dark); color: var(--text-main);
             padding: 20px; max-width: 1300px; margin: 0 auto;
             animation: fadeIn 0.6s ease-out; position: relative; z-index: 1;
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        /* --- AMBILIGHT --- */
         .ambilight-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-size: cover; background-position: center;
@@ -36,7 +45,18 @@
         @keyframes slideDown { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, 100px); opacity: 0; } }
         @keyframes heartBeat { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
-        /* --- RECHERCHE --- */
+        /* Header avec contrôles */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+        }
+        .theme-toggle, .settings-btn {
+            background: var(--bg-card); border: 1px solid #333; color: var(--text-main);
+            padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .theme-toggle:hover, .settings-btn:hover { background: #333; }
+
         .search-container { margin-bottom: 20px; position: relative; }
         .search-input {
             width: 100%; padding: 14px 20px 14px 45px; background: rgba(24, 24, 24, 0.8);
@@ -45,12 +65,18 @@
         }
         .search-input:focus { border-color: var(--primary); box-shadow: 0 0 20px var(--primary-glow); }
         .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+        .voice-btn {
+            position: absolute; right: 50px; top: 50%; transform: translateY(-50%);
+            background: transparent; border: none; color: var(--text-muted); cursor: pointer;
+            font-size: 1.2rem; transition: 0.2s;
+        }
+        .voice-btn:hover { color: var(--primary); }
+        .voice-btn.listening { color: var(--primary); animation: pulse 1s infinite; }
         .search-shortcut {
             position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
             background: #333; color: #aaa; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; border: 1px solid #444;
         }
 
-        /* --- CONTINUE WATCHING --- */
         .continue-watching-section { margin-bottom: 30px; display: none; }
         .continue-watching-section.visible { display: block; animation: fadeIn 0.5s ease; }
         .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: #fff; display: flex; align-items: center; gap: 8px; }
@@ -66,7 +92,6 @@
         .hw-progress { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--primary); width: 30%; }
         .hw-title { padding: 8px 10px; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* --- LECTEUR & MINI PLAYER --- */
         .main-player {
             background: #000; border-radius: 12px; overflow: hidden;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8); margin-bottom: 20px;
@@ -76,7 +101,6 @@
             box-shadow: 0 0 80px var(--primary-glow); border-color: var(--primary);
             max-width: 100vw; margin: 0 -20px 30px -20px;
         }
-        /* Style du Mini Player */
         .main-player.mini-player {
             position: fixed; bottom: 20px; right: 20px; width: 320px; height: 180px;
             margin: 0; border-radius: 8px; z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
@@ -97,7 +121,6 @@
             padding: 4px 10px; border-radius: 4px; display: none; white-space: nowrap; font-weight: 600;
         }
 
-        /* --- ACTIONS & GRILLE --- */
         .quick-actions { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; align-items: center; }
         .btn-action {
             background: #333; color: white; border: none; padding: 10px 18px;
@@ -158,7 +181,6 @@
             animation: slideUp 0.3s ease; font-weight: 500; backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* --- MENU CONTEXTUEL PERSONNALISÉ --- */
         .custom-context-menu {
             position: absolute; background: #252525; border: 1px solid #444; border-radius: 8px;
             padding: 8px 0; min-width: 180px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 10001;
@@ -168,6 +190,35 @@
             padding: 10px 16px; cursor: pointer; font-size: 0.9rem; color: #ddd; display: flex; align-items: center; gap: 10px;
         }
         .context-item:hover { background: var(--primary); color: white; }
+
+        /* Modal Settings */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 10002; display: none;
+            justify-content: center; align-items: center; backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--bg-card); padding: 30px; border-radius: 12px;
+            max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;
+            border: 1px solid #444;
+        }
+        .modal h3 { margin-bottom: 20px; color: var(--text-main); }
+        .modal-section { margin-bottom: 20px; }
+        .modal-section label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9rem; }
+        .color-picker { display: flex; gap: 10px; flex-wrap: wrap; }
+        .color-option {
+            width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+            border: 3px solid transparent; transition: 0.2s;
+        }
+        .color-option:hover { transform: scale(1.1); }
+        .color-option.active { border-color: white; }
+        .modal-btn {
+            background: var(--primary); color: white; border: none; padding: 10px 20px;
+            border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 10px;
+        }
+        .modal-btn:hover { opacity: 0.9; }
+        .modal-btn.secondary { background: #333; }
 
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-dark); }
@@ -181,6 +232,7 @@
             .search-shortcut { display: none; }
             .main-player.mini-player { width: 160px; height: 90px; bottom: 10px; right: 10px; }
             .main-player.mini-player video { max-height: 90px; }
+            .top-bar { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -188,9 +240,18 @@
 
     <div class="ambilight-bg" id="ambilightBg"></div>
 
+    <div class="top-bar">
+        <h1 style="font-size: 1.5rem; font-weight: 700;">🎬 Ma Galerie</h1>
+        <div style="display: flex; gap: 10px;">
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Thème</button>
+            <button class="settings-btn" onclick="openSettings()">️ Paramètres</button>
+        </div>
+    </div>
+
     <div class="search-container">
         <span class="search-icon">🔍</span>
         <input type="text" id="searchInput" class="search-input" placeholder="Rechercher un titre...">
+        <button class="voice-btn" id="voiceBtn" onclick="startVoiceSearch()" title="Recherche vocale">🎙️</button>
         <span class="search-shortcut">Ctrl K</span>
     </div>
 
@@ -207,13 +268,14 @@
         <div class="video-info">
             <h2 id="mainTitle">Chargement de votre bibliothèque...</h2>
             <span class="badge-resume" id="resumeBadge">▶ Reprendre</span>
-            <button class="btn-action" onclick="toggleCinemaMode()" title="Mode Cinéma (C)">🎬 Cinéma</button>
+            <button class="btn-action" onclick="toggleCinemaMode()" title="Mode Cinéma (C)"> Cinéma</button>
         </div>
     </div>
 
     <div class="quick-actions">
         <button class="btn-action btn-primary" onclick="jouerVideoAleatoire()">🎲 Aléatoire</button>
         <button class="btn-action" onclick="genererLienPartage()">🔗 Partager</button>
+        <button class="btn-action" onclick="showStats()"> Stats</button>
         <div class="stats-display" id="statsDisplay">📊 Calcul des stats...</div>
     </div>
 
@@ -230,11 +292,44 @@
         <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
     </div>
 
-    <!-- Menu Contextuel Caché -->
     <div class="custom-context-menu" id="contextMenu">
         <div class="context-item" onclick="contextAction('play')">▶ Lire maintenant</div>
         <div class="context-item" onclick="contextAction('fav')">❤️ Ajouter aux favoris</div>
         <div class="context-item" onclick="contextAction('copy')">🔗 Copier le lien</div>
+    </div>
+
+    <!-- Modal Paramètres -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <h3>⚙️ Paramètres</h3>
+            
+            <div class="modal-section">
+                <label>🎨 Couleur principale</label>
+                <div class="color-picker">
+                    <div class="color-option active" style="background: #e50914;" onclick="changeColor('#e50914', this)"></div>
+                    <div class="color-option" style="background: #0088cc;" onclick="changeColor('#0088cc', this)"></div>
+                    <div class="color-option" style="background: #9b59b6;" onclick="changeColor('#9b59b6', this)"></div>
+                    <div class="color-option" style="background: #27ae60;" onclick="changeColor('#27ae60', this)"></div>
+                    <div class="color-option" style="background: #f39c12;" onclick="changeColor('#f39c12', this)"></div>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <label> Sauvegardes</label>
+                <button class="modal-btn" onclick="exportData()">📤 Exporter mes données</button>
+                <button class="modal-btn secondary" onclick="document.getElementById('importFile').click()">📥 Importer</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+            </div>
+
+            <div class="modal-section">
+                <label>️ Réinitialisation</label>
+                <button class="modal-btn secondary" onclick="resetAllData()">Effacer toutes les données</button>
+            </div>
+
+            <div style="margin-top: 30px; text-align: right;">
+                <button class="modal-btn" onclick="closeSettings()">Fermer</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -246,7 +341,13 @@
         let playbackSpeeds = [0.5, 1, 1.25, 1.5, 2];
         let currentSpeedIndex = 1;
         let contextTargetVideo = null;
-        let focusedGridIndex = -1; // Pour la navigation clavier
+        let focusedGridIndex = -1;
+        let viewingHistory = JSON.parse(localStorage.getItem('viewingHistory') || '[]');
+
+        // --- PWA: Service Worker ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log('SW non enregistré'));
+        }
 
         // --- UTILITAIRES ---
         function obtenirVignetteAuto(urlVideo) {
@@ -266,15 +367,150 @@
             document.body.appendChild(toast);
             setTimeout(() => { toast.style.animation = 'slideDown 0.3s ease forwards'; setTimeout(() => toast.remove(), 300); }, duree);
         }
-        function mettreAJourStats(dureeSeconds) {
-            let stats = JSON.parse(localStorage.getItem('viewingStats') || '{"totalTime": 0, "videosWatched": 0}');
-            stats.totalTime += dureeSeconds; stats.videosWatched += 1;
-            localStorage.setItem('viewingStats', JSON.stringify(stats)); afficherStats();
+
+        // --- THÈME & COULEUR ---
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const newTheme = current === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            showToast(newTheme === 'light' ? '☀️ Mode clair activé' : '🌙 Mode sombre activé');
         }
+
+        function changeColor(color, element) {
+            document.documentElement.style.setProperty('--primary', color);
+            document.documentElement.style.setProperty('--primary-glow', color + '66');
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            localStorage.setItem('primaryColor', color);
+            showToast('🎨 Couleur modifiée');
+        }
+
+        // Charger les préférences sauvegardées
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+        const savedColor = localStorage.getItem('primaryColor');
+        if (savedColor) {
+            document.documentElement.style.setProperty('--primary', savedColor);
+            document.documentElement.style.setProperty('--primary-glow', savedColor + '66');
+        }
+
+        // --- PARAMÈTRES MODAL ---
+        function openSettings() { document.getElementById('settingsModal').classList.add('active'); }
+        function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+
+        function exportData() {
+            const data = {
+                favorites,
+                viewingHistory,
+                stats: JSON.parse(localStorage.getItem('viewingStats') || '{}'),
+                progress: {}
+            };
+            // Récupérer toutes les progressions
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('progress_')) {
+                    data.progress[key] = localStorage.getItem(key);
+                }
+            }
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `backup-galerie-${Date.now()}.json`;
+            a.click(); URL.revokeObjectURL(url);
+            showToast(' Données exportées');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.favorites) { favorites = data.favorites; localStorage.setItem('myFavorites', JSON.stringify(favorites)); }
+                    if (data.viewingHistory) { viewingHistory = data.viewingHistory; localStorage.setItem('viewingHistory', JSON.stringify(viewingHistory)); }
+                    if (data.stats) localStorage.setItem('viewingStats', JSON.stringify(data.stats));
+                    if (data.progress) {
+                        Object.entries(data.progress).forEach(([key, value]) => localStorage.setItem(key, value));
+                    }
+                    showToast('📥 Données importées avec succès');
+                    afficherGrille(allVideos);
+                } catch (err) {
+                    showToast('❌ Erreur lors de l\'import');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetAllData() {
+            if (confirm('⚠️ Êtes-vous sûr de vouloir effacer TOUTES vos données (favoris, progression, stats) ?')) {
+                localStorage.clear();
+                favorites = [];
+                viewingHistory = [];
+                showToast('🗑️ Toutes les données ont été effacées');
+                location.reload();
+            }
+        }
+
+        // --- RECHERCHE VOCALE ---
+        function startVoiceSearch() {
+            if (!('webkitSpeechRecognition' in window)) {
+                showToast('❌ Recherche vocale non supportée');
+                return;
+            }
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = 'fr-FR';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            const voiceBtn = document.getElementById('voiceBtn');
+            voiceBtn.classList.add('listening');
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('searchInput').value = transcript;
+                document.getElementById('searchInput').dispatchEvent(new Event('input'));
+                voiceBtn.classList.remove('listening');
+                showToast(`️ Recherche: "${transcript}"`);
+            };
+
+            recognition.onerror = () => {
+                voiceBtn.classList.remove('listening');
+                showToast(' Erreur de reconnaissance vocale');
+            };
+
+            recognition.onend = () => voiceBtn.classList.remove('listening');
+            recognition.start();
+        }
+
+        // --- STATS AVANCÉES ---
+        function mettreAJourStats(dureeSeconds) {
+            let stats = JSON.parse(localStorage.getItem('viewingStats') || '{"totalTime": 0, "videosWatched": 0, "dailyStats": {}}');
+            stats.totalTime += dureeSeconds;
+            stats.videosWatched += 1;
+            
+            const today = new Date().toISOString().split('T')[0];
+            if (!stats.dailyStats[today]) stats.dailyStats[today] = 0;
+            stats.dailyStats[today] += dureeSeconds;
+            
+            localStorage.setItem('viewingStats', JSON.stringify(stats));
+            afficherStats();
+        }
+
         function afficherStats() {
             const stats = JSON.parse(localStorage.getItem('viewingStats') || '{"totalTime": 0, "videosWatched": 0}');
             const h = Math.floor(stats.totalTime / 3600); const m = Math.floor((stats.totalTime % 3600) / 60);
-            document.getElementById('statsDisplay').textContent = `📊 ${stats.videosWatched} vidéos vues (${h}h ${m}min)`;
+            document.getElementById('statsDisplay').textContent = ` ${stats.videosWatched} vidéos (${h}h ${m}min)`;
+        }
+
+        function showStats() {
+            const stats = JSON.parse(localStorage.getItem('viewingStats') || '{"totalTime": 0, "videosWatched": 0, "dailyStats": {}}');
+            const h = Math.floor(stats.totalTime / 3600);
+            const m = Math.floor((stats.totalTime % 3600) / 60);
+            const days = Object.keys(stats.dailyStats || {}).length;
+            
+            alert(`📊 Statistiques de visionnage:\n\n ${stats.videosWatched} vidéos vues\n⏱️ ${h}h ${m}min total\n📅 ${days} jours d'activité\n\nMerci d'utiliser Ma Galerie !`);
         }
 
         // --- GESTION DES FAVORIS ---
@@ -338,7 +574,6 @@
             }
         }
 
-        // --- FONCTIONNALITÉS AVANCÉES ---
         function genererContinueWatching() {
             const section = document.getElementById('continueSection'); const scrollContainer = document.getElementById('continueScroll');
             scrollContainer.innerHTML = ''; let hasItems = false;
@@ -377,7 +612,6 @@
                 item.dataset.index = originalIndex;
                 item.onclick = () => jouerVideo(originalIndex);
                 
-                // Menu contextuel personnalisé
                 item.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
                     contextTargetVideo = video;
@@ -422,7 +656,6 @@
 
             mainVideo.load(); mainVideo.play().catch(() => {});
             
-            // PRÉCHARGEMENT INTELLIGENT DE LA VIDÉO SUIVANTE
             if (index < allVideos.length - 1) {
                 const nextVideo = document.createElement('link');
                 nextVideo.rel = 'prefetch';
@@ -495,7 +728,6 @@
             showToast(p.classList.contains('cinema-mode') ? "🎬 Mode cinéma activé" : "Mode cinéma désactivé");
         }
 
-        // --- MINI PLAYER (Intersection Observer) ---
         const playerObserver = new IntersectionObserver((entries) => {
             const player = document.getElementById('mainPlayer');
             if (!entries[0].isIntersecting && !document.getElementById('mainVideo').paused) {
@@ -504,20 +736,17 @@
                 player.classList.remove('mini-player');
             }
         }, { threshold: 0.1 });
-        // On l'activera après le chargement
 
-        // --- MENU CONTEXTUEL ---
         function contextAction(action) {
             document.getElementById('contextMenu').style.display = 'none';
             if (!contextTargetVideo) return;
             const url = contextTargetVideo.video;
             if (action === 'play') { jouerVideo(allVideos.findIndex(v => v.video === url)); }
             else if (action === 'fav') { toggleFavorite(url, null); }
-            else if (action === 'copy') { navigator.clipboard.writeText(url).then(() => showToast("🔗 Lien copié !")); }
+            else if (action === 'copy') { navigator.clipboard.writeText(url).then(() => showToast(" Lien copié !")); }
         }
         document.addEventListener('click', () => { document.getElementById('contextMenu').style.display = 'none'; });
 
-        // --- NAVIGATION CLAVIER AVANCÉE ---
         document.addEventListener('keydown', (e) => {
             if (document.activeElement.id === 'searchInput') { if (e.key === 'Escape') document.activeElement.blur(); return; }
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); document.getElementById('searchInput').focus(); return; }
@@ -529,14 +758,13 @@
             if (e.code === 'KeyM') { e.preventDefault(); v.muted = !v.muted; showToast(v.muted ? "🔇 Muet" : "🔊 Son activé"); }
             if (e.code === 'ArrowRight') { e.preventDefault(); v.currentTime += 10; }
             if (e.code === 'ArrowLeft') { e.preventDefault(); v.currentTime -= 10; }
-            if (e.code === 'KeyS') { e.preventDefault(); currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length; v.playbackRate = playbackSpeeds[currentSpeedIndex]; showToast(`⏩ Vitesse : ${playbackSpeeds[currentSpeedIndex]}x`); }
+            if (e.code === 'KeyS') { e.preventDefault(); currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length; v.playbackRate = playbackSpeeds[currentSpeedIndex]; showToast(` Vitesse : ${playbackSpeeds[currentSpeedIndex]}x`); }
             
-            // Navigation grille (Flèches)
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code) && document.activeElement.id !== 'searchInput') {
                 e.preventDefault();
                 const items = document.querySelectorAll('.video-item');
                 if (items.length === 0) return;
-                const columns = Math.floor(document.querySelector('.video-grid').offsetWidth / 240); // Estimation colonnes
+                const columns = Math.floor(document.querySelector('.video-grid').offsetWidth / 240);
                 
                 if (focusedGridIndex === -1) focusedGridIndex = 0;
                 else {
