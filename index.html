@@ -3,41 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ma Galerie Vidéo Ultimate</title>
+    <title>Ma Galerie Vidéo - God Mode</title>
     <style>
         :root {
-            --primary: #e50914; /* Rouge style Netflix pour le "Wow" */
+            --primary: #e50914;
             --primary-glow: rgba(229, 9, 20, 0.4);
             --bg-dark: #0f0f0f;
             --bg-card: #181818;
             --text-main: #ffffff;
             --text-muted: #aaaaaa;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            padding: 20px;
-            max-width: 1300px;
-            margin: 0 auto;
-            animation: fadeIn 0.6s ease-out;
-            position: relative;
-            z-index: 1;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark); color: var(--text-main);
+            padding: 20px; max-width: 1300px; margin: 0 auto;
+            animation: fadeIn 0.6s ease-out; position: relative; z-index: 1;
         }
 
-        /* --- EFFET AMBILIGHT (Fond dynamique) --- */
+        /* --- AMBILIGHT --- */
         .ambilight-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover;
-            background-position: center;
-            filter: blur(80px) brightness(0.3);
-            z-index: -1;
-            transition: background-image 0.8s ease-in-out;
-            opacity: 0;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            filter: blur(80px) brightness(0.25); z-index: -1;
+            transition: background-image 0.8s ease-in-out; opacity: 0;
         }
         .ambilight-bg.active { opacity: 1; }
 
@@ -58,50 +47,47 @@
         .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
         .search-shortcut {
             position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
-            background: #333; color: #aaa; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;
-            border: 1px solid #444;
+            background: #333; color: #aaa; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; border: 1px solid #444;
         }
 
-        /* --- CONTINUE WATCHING (NETFLIX STYLE) --- */
-        .continue-watching-section {
-            margin-bottom: 30px;
-            display: none; /* Caché par défaut, affiché via JS si besoin */
-        }
+        /* --- CONTINUE WATCHING --- */
+        .continue-watching-section { margin-bottom: 30px; display: none; }
         .continue-watching-section.visible { display: block; animation: fadeIn 0.5s ease; }
         .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: #fff; display: flex; align-items: center; gap: 8px; }
-        
-        .horizontal-scroll {
-            display: flex; gap: 12px; overflow-x: auto; padding-bottom: 15px;
-            scroll-behavior: smooth;
-        }
+        .horizontal-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 15px; scroll-behavior: smooth; }
         .horizontal-scroll::-webkit-scrollbar { height: 6px; }
         .horizontal-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-        
         .hw-item {
             min-width: 280px; background: var(--bg-card); border-radius: 6px; overflow: hidden;
             cursor: pointer; transition: transform 0.2s; position: relative; flex-shrink: 0;
         }
         .hw-item:hover { transform: scale(1.05); z-index: 10; }
         .hw-item img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
-        .hw-progress {
-            position: absolute; bottom: 0; left: 0; height: 4px; background: var(--primary); width: 0%;
-        }
+        .hw-progress { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--primary); width: 30%; }
         .hw-title { padding: 8px 10px; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* --- LECTEUR --- */
+        /* --- LECTEUR & MINI PLAYER --- */
         .main-player {
             background: #000; border-radius: 12px; overflow: hidden;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8); margin-bottom: 20px;
-            border: 1px solid #333; transition: all 0.4s ease; position: relative;
+            border: 1px solid #333; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; z-index: 100;
         }
         .main-player.cinema-mode {
             box-shadow: 0 0 80px var(--primary-glow); border-color: var(--primary);
             max-width: 100vw; margin: 0 -20px 30px -20px;
         }
-        video { width: 100%; height: auto; display: block; max-height: 70vh; background: #000; }
+        /* Style du Mini Player */
+        .main-player.mini-player {
+            position: fixed; bottom: 20px; right: 20px; width: 320px; height: 180px;
+            margin: 0; border-radius: 8px; z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            cursor: pointer;
+        }
+        .main-player.mini-player video { max-height: 180px; }
+        .main-player.mini-player .video-info, .main-player.mini-player .btn-action { display: none !important; }
         
+        video { width: 100%; height: auto; display: block; max-height: 70vh; background: #000; }
         .video-info {
-            padding: 15px 20px; background: rgba(24, 24, 24, 0.9); border-top: 1px solid #333;
+            padding: 15px 20px; background: rgba(24, 24, 24, 0.95); border-top: 1px solid #333;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
             backdrop-filter: blur(10px);
         }
@@ -111,7 +97,7 @@
             padding: 4px 10px; border-radius: 4px; display: none; white-space: nowrap; font-weight: 600;
         }
 
-        /* --- ACTIONS RAPIDES --- */
+        /* --- ACTIONS & GRILLE --- */
         .quick-actions { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; align-items: center; }
         .btn-action {
             background: #333; color: white; border: none; padding: 10px 18px;
@@ -123,7 +109,6 @@
         .btn-primary:hover { background: #f40612; }
         .stats-display { color: var(--text-muted); font-size: 0.85rem; margin-left: auto; }
 
-        /* --- GRILLE PRINCIPALE --- */
         .video-list-header {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;
@@ -136,21 +121,17 @@
         .filter-tab.active, .filter-tab:hover { background: #fff; color: #000; border-color: #fff; }
 
         .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-
         .video-item {
             background: var(--bg-card); border-radius: 8px; overflow: hidden;
-            cursor: pointer; transition: 0.2s; position: relative; group: hover;
+            cursor: pointer; transition: 0.2s; position: relative;
         }
         .video-item:hover { transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.6); }
         .video-item.active { outline: 2px solid var(--primary); outline-offset: 2px; }
+        .video-item.focused { outline: 3px solid #fff; outline-offset: 2px; transform: scale(1.05); z-index: 10; }
         
-        .video-item img {
-            width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;
-            background: #111; transition: transform 0.3s ease;
-        }
+        .video-item img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: #111; transition: transform 0.3s ease; }
         .video-item:hover img { transform: scale(1.05); }
         
-        /* Bouton Favori */
         .fav-btn {
             position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7);
             border: none; color: white; width: 32px; height: 32px; border-radius: 50%;
@@ -159,39 +140,38 @@
         }
         .video-item:hover .fav-btn { opacity: 1; }
         .fav-btn.is-fav { color: var(--primary); opacity: 1; animation: heartBeat 0.3s ease; }
-        .fav-btn:hover { background: rgba(255,255,255,0.2); }
-
-        .progress-bar {
-            position: absolute; bottom: 0; left: 0; height: 4px;
-            background: var(--primary); width: 0%; transition: width 0.3s; z-index: 2;
-        }
+        
+        .progress-bar { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--primary); width: 0%; transition: width 0.3s; z-index: 2; }
         .video-item .title {
             padding: 12px; font-size: 0.9rem; font-weight: 500; color: #ddd;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-            overflow: hidden; line-height: 1.3;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3;
         }
         .video-item.active .title { color: #fff; font-weight: 700; }
 
-        .loading-state, .error-state, .empty-state {
-            text-align: center; padding: 40px; color: var(--text-muted); grid-column: 1 / -1;
-        }
-        .skeleton {
-            background: linear-gradient(90deg, #181818 25%, #252525 50%, #181818 75%);
-            background-size: 200% 100%; animation: pulse 1.5s infinite; border-radius: 8px; height: 180px;
-        }
+        .loading-state, .error-state, .empty-state { text-align: center; padding: 40px; color: var(--text-muted); grid-column: 1 / -1; }
+        .skeleton { background: linear-gradient(90deg, #181818 25%, #252525 50%, #181818 75%); background-size: 200% 100%; animation: pulse 1.5s infinite; border-radius: 8px; height: 180px; }
 
         .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             background: rgba(24, 24, 24, 0.95); color: white; padding: 12px 24px;
             border-radius: 8px; border-left: 4px solid var(--primary); z-index: 10000;
-            animation: slideUp 0.3s ease; font-weight: 500; backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: slideUp 0.3s ease; font-weight: 500; backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+
+        /* --- MENU CONTEXTUEL PERSONNALISÉ --- */
+        .custom-context-menu {
+            position: absolute; background: #252525; border: 1px solid #444; border-radius: 8px;
+            padding: 8px 0; min-width: 180px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 10001;
+            display: none; animation: slideUp 0.15s ease;
+        }
+        .context-item {
+            padding: 10px 16px; cursor: pointer; font-size: 0.9rem; color: #ddd; display: flex; align-items: center; gap: 10px;
+        }
+        .context-item:hover { background: var(--primary); color: white; }
 
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-dark); }
         ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-
         @media (max-width: 600px) {
             body { padding: 10px; }
             .video-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -199,12 +179,13 @@
             .quick-actions { justify-content: center; }
             .stats-display { margin-left: 0; width: 100%; text-align: center; margin-top: 5px; }
             .search-shortcut { display: none; }
+            .main-player.mini-player { width: 160px; height: 90px; bottom: 10px; right: 10px; }
+            .main-player.mini-player video { max-height: 90px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Fond Ambilight -->
     <div class="ambilight-bg" id="ambilightBg"></div>
 
     <div class="search-container">
@@ -213,7 +194,6 @@
         <span class="search-shortcut">Ctrl K</span>
     </div>
 
-    <!-- Section Reprendre la lecture (Netflix Style) -->
     <div class="continue-watching-section" id="continueSection">
         <div class="section-title">▶ Reprendre la lecture</div>
         <div class="horizontal-scroll" id="continueScroll"></div>
@@ -234,7 +214,7 @@
     <div class="quick-actions">
         <button class="btn-action btn-primary" onclick="jouerVideoAleatoire()">🎲 Aléatoire</button>
         <button class="btn-action" onclick="genererLienPartage()">🔗 Partager</button>
-        <div class="stats-display" id="statsDisplay">📊 Calcul des stats...</div.>
+        <div class="stats-display" id="statsDisplay">📊 Calcul des stats...</div>
     </div>
 
     <div class="video-list-header">
@@ -250,6 +230,13 @@
         <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
     </div>
 
+    <!-- Menu Contextuel Caché -->
+    <div class="custom-context-menu" id="contextMenu">
+        <div class="context-item" onclick="contextAction('play')">▶ Lire maintenant</div>
+        <div class="context-item" onclick="contextAction('fav')">❤️ Ajouter aux favoris</div>
+        <div class="context-item" onclick="contextAction('copy')">🔗 Copier le lien</div>
+    </div>
+
     <script>
         const ARCHIVE_USERNAME = "Mikeboy58";
         const MAX_VIDEOS = 100;
@@ -258,103 +245,71 @@
         let favorites = JSON.parse(localStorage.getItem('myFavorites') || '[]');
         let playbackSpeeds = [0.5, 1, 1.25, 1.5, 2];
         let currentSpeedIndex = 1;
+        let contextTargetVideo = null;
+        let focusedGridIndex = -1; // Pour la navigation clavier
 
         // --- UTILITAIRES ---
         function obtenirVignetteAuto(urlVideo) {
             const match = urlVideo.match(/\/(?:items|download)\/([^\/]+)\//);
             return match ? `https://archive.org/download/${match[1]}/__ia_thumb.jpg` : 'https://via.placeholder.com/320x180/222/888?text=No+Thumb';
         }
-
         function formatTime(seconds) {
             if (isNaN(seconds)) return "0m 00s";
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60);
+            const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60);
             return `${m}m ${s < 10 ? '0' : ''}${s}s`;
         }
-
         function showToast(message, duree = 3000) {
             const existing = document.querySelector('.toast');
             if (existing) existing.remove();
             const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
+            toast.className = 'toast'; toast.textContent = message;
             document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.animation = 'slideDown 0.3s ease forwards';
-                setTimeout(() => toast.remove(), 300);
-            }, duree);
+            setTimeout(() => { toast.style.animation = 'slideDown 0.3s ease forwards'; setTimeout(() => toast.remove(), 300); }, duree);
         }
-
         function mettreAJourStats(dureeSeconds) {
             let stats = JSON.parse(localStorage.getItem('viewingStats') || '{"totalTime": 0, "videosWatched": 0}');
-            stats.totalTime += dureeSeconds;
-            stats.videosWatched += 1;
-            localStorage.setItem('viewingStats', JSON.stringify(stats));
-            afficherStats();
+            stats.totalTime += dureeSeconds; stats.videosWatched += 1;
+            localStorage.setItem('viewingStats', JSON.stringify(stats)); afficherStats();
         }
-
         function afficherStats() {
             const stats = JSON.parse(localStorage.getItem('viewingStats') || '{"totalTime": 0, "videosWatched": 0}');
-            const h = Math.floor(stats.totalTime / 3600);
-            const m = Math.floor((stats.totalTime % 3600) / 60);
+            const h = Math.floor(stats.totalTime / 3600); const m = Math.floor((stats.totalTime % 3600) / 60);
             document.getElementById('statsDisplay').textContent = `📊 ${stats.videosWatched} vidéos vues (${h}h ${m}min)`;
         }
 
+        // --- GESTION DES FAVORIS ---
         function toggleFavorite(videoUrl, event) {
-            if(event) event.stopPropagation(); // Empêche de lancer la vidéo en cliquant sur le cœur
-            
+            if(event) event.stopPropagation();
             const index = favorites.indexOf(videoUrl);
-            if (index === -1) {
-                favorites.push(videoUrl);
-                showToast("❤️ Ajouté aux favoris");
-            } else {
-                favorites.splice(index, 1);
-                showToast("Retiré des favoris");
-            }
+            if (index === -1) { favorites.push(videoUrl); showToast("❤️ Ajouté aux favoris"); } 
+            else { favorites.splice(index, 1); showToast("Retiré des favoris"); }
             localStorage.setItem('myFavorites', JSON.stringify(favorites));
-            
-            // Mettre à jour l'UI
             document.querySelectorAll('.fav-btn').forEach(btn => {
                 if (btn.dataset.url === videoUrl) {
                     btn.classList.toggle('is-fav', favorites.includes(videoUrl));
                     btn.innerHTML = favorites.includes(videoUrl) ? '❤️' : '🤍';
                 }
             });
-            
-            // Si on est en mode filtre favoris, rafraîchir la grille
-            if (document.querySelector('.filter-tab.active').textContent.includes('Favoris')) {
-                filtrer('favorites', document.querySelector('.filter-tab.active'));
-            }
+            if (document.querySelector('.filter-tab.active').textContent.includes('Favoris')) filtrer('favorites', document.querySelector('.filter-tab.active'));
         }
 
-        // --- CHARGEMENT DES DONNÉES ---
+        // --- CHARGEMENT ---
         async function chargerToutesLesVideos() {
             let combinedVideos = [];
-
             try {
-                // 1. JSON LOCAL
                 try {
                     const res = await fetch('videos.json');
                     if (res.ok) {
                         const jsonVideos = await res.json();
-                        combinedVideos = [...combinedVideos, ...jsonVideos.map(v => ({
-                            titre: v.titre,
-                            video: v.video,
-                            vignette: v.vignette || obtenirVignetteAuto(v.video),
-                            source: 'json'
-                        }))];
+                        combinedVideos = [...combinedVideos, ...jsonVideos.map(v => ({ titre: v.titre, video: v.video, vignette: v.vignette || obtenirVignetteAuto(v.video), source: 'json' }))];
                     }
                 } catch (e) { console.log("ℹ️ Pas de videos.json"); }
 
-                // 2. ARCHIVE.ORG
                 const apiUrl = `https://archive.org/advancedsearch.php?q=uploader:"${ARCHIVE_USERNAME}"&fl[]=identifier,title,publicdate&sort[]=-publicdate&output=json&rows=${MAX_VIDEOS}`;
-                const response = await fetch(apiUrl);
-                const data = await response.json();
-
+                const response = await fetch(apiUrl); const data = await response.json();
                 if (data.response.numFound > 0) {
                     for (const doc of data.response.docs) {
-                        const identifier = doc.identifier;
-                        let mp4File = `${identifier}.mp4`;
+                        const identifier = doc.identifier; let mp4File = `${identifier}.mp4`;
                         try {
                             const filesRes = await fetch(`https://archive.org/metadata/${identifier}`);
                             const filesData = await filesRes.json();
@@ -368,96 +323,50 @@
                                 }
                             }
                         } catch (e) {}
-
                         const videoUrl = `https://archive.org/download/${identifier}/${mp4File}`;
-                        combinedVideos.push({
-                            titre: doc.title || identifier,
-                            video: videoUrl,
-                            vignette: `https://archive.org/download/${identifier}/__ia_thumb.jpg`,
-                            source: 'archive',
-                            date: doc.publicdate
-                        });
+                        combinedVideos.push({ titre: doc.title || identifier, video: videoUrl, vignette: `https://archive.org/download/${identifier}/__ia_thumb.jpg`, source: 'archive', date: doc.publicdate });
                     }
                 }
 
-                // 3. DÉDOUBLONNAGE
                 const uniqueMap = new Map();
-                for (const v of combinedVideos) {
-                    if (!uniqueMap.has(v.video)) uniqueMap.set(v.video, v);
-                }
+                for (const v of combinedVideos) { if (!uniqueMap.has(v.video)) uniqueMap.set(v.video, v); }
+                allVideos = Array.from(uniqueMap.values()).sort((a, b) => { if (a.date && b.date) return new Date(b.date) - new Date(a.date); return 0; });
 
-                allVideos = Array.from(uniqueMap.values()).sort((a, b) => {
-                    if (a.date && b.date) return new Date(b.date) - new Date(a.date);
-                    return 0;
-                });
-
-                document.getElementById('videoCount')?.remove(); // Nettoyage si présent
-                afficherGrille(allVideos);
-                genererContinueWatching();
-                restaurerSession();
-                afficherStats();
-
+                afficherGrille(allVideos); genererContinueWatching(); restaurerSession(); afficherStats();
             } catch (error) {
-                console.error(error);
                 document.getElementById('videoGrid').innerHTML = `<div class="error-state">❌ Erreur : ${error.message}</div>`;
             }
         }
 
-        // --- FONCTIONNALITÉS INTELLIGENTES ---
+        // --- FONCTIONNALITÉS AVANCÉES ---
         function genererContinueWatching() {
-            const section = document.getElementById('continueSection');
-            const scrollContainer = document.getElementById('continueScroll');
-            scrollContainer.innerHTML = '';
-            let hasItems = false;
-
+            const section = document.getElementById('continueSection'); const scrollContainer = document.getElementById('continueScroll');
+            scrollContainer.innerHTML = ''; let hasItems = false;
             allVideos.forEach(video => {
                 const savedTime = localStorage.getItem(`progress_${video.video}`);
                 if (savedTime && parseFloat(savedTime) > 10) {
                     hasItems = true;
-                    const div = document.createElement('div');
-                    div.className = 'hw-item';
-                    div.onclick = () => {
-                        const idx = allVideos.indexOf(video);
-                        jouerVideo(idx);
-                    };
-                    
-                    // Calcul approximatif du pourcentage (basé sur une durée moyenne estimée ou lue si possible)
-                    // Ici on met juste une barre visuelle fixe à 30% pour l'effet "en cours"
-                    div.innerHTML = `
-                        <img src="${video.vignette}" alt="${video.titre}">
-                        <div class="hw-progress" style="width: 30%"></div>
-                        <div class="hw-title">${video.titre}</div>
-                    `;
+                    const div = document.createElement('div'); div.className = 'hw-item';
+                    div.onclick = () => jouerVideo(allVideos.indexOf(video));
+                    div.innerHTML = `<img src="${video.vignette}" alt="${video.titre}"><div class="hw-progress"></div><div class="hw-title">${video.titre}</div>`;
                     scrollContainer.appendChild(div);
                 }
             });
-
-            if (hasItems) {
-                section.classList.add('visible');
-            }
+            if (hasItems) section.classList.add('visible');
         }
 
         function filtrer(type, btnElement) {
             document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-            btnElement.classList.add('active');
-
-            if (type === 'all') {
-                afficherGrille(allVideos);
-            } else if (type === 'favorites') {
-                const favVideos = allVideos.filter(v => favorites.includes(v.video));
-                afficherGrille(favVideos);
-            }
+            btnElement.classList.add('active'); focusedGridIndex = -1;
+            if (type === 'all') afficherGrille(allVideos);
+            else if (type === 'favorites') afficherGrille(allVideos.filter(v => favorites.includes(v.video)));
         }
 
         function afficherGrille(videosAAfficher) {
-            const grid = document.getElementById('videoGrid');
-            grid.innerHTML = '';
-            if (videosAAfficher.length === 0) {
-                grid.innerHTML = '<div class="empty-state">Aucun résultat pour cette sélection.</div>';
-                return;
-            }
+            const grid = document.getElementById('videoGrid'); grid.innerHTML = '';
+            if (videosAAfficher.length === 0) { grid.innerHTML = '<div class="empty-state">Aucun résultat.</div>'; return; }
 
-            videosAAfficher.forEach((video) => {
+            videosAAfficher.forEach((video, index) => {
                 const originalIndex = allVideos.indexOf(video);
                 const isActive = originalIndex === currentVideoIndex;
                 const savedTime = localStorage.getItem(`progress_${video.video}`);
@@ -465,12 +374,21 @@
 
                 const item = document.createElement('div');
                 item.className = `video-item ${isActive ? 'active' : ''}`;
+                item.dataset.index = originalIndex;
                 item.onclick = () => jouerVideo(originalIndex);
+                
+                // Menu contextuel personnalisé
+                item.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    contextTargetVideo = video;
+                    const menu = document.getElementById('contextMenu');
+                    menu.style.display = 'block';
+                    menu.style.left = `${e.pageX}px`;
+                    menu.style.top = `${e.pageY}px`;
+                });
 
                 item.innerHTML = `
-                    <button class="fav-btn ${isFav ? 'is-fav' : ''}" data-url="${video.video}" onclick="toggleFavorite('${video.video}', event)">
-                        ${isFav ? '❤️' : '🤍'}
-                    </button>
+                    <button class="fav-btn ${isFav ? 'is-fav' : ''}" data-url="${video.video}" onclick="toggleFavorite('${video.video}', event)">${isFav ? '❤️' : '🤍'}</button>
                     <img src="${video.vignette}" alt="${video.titre}" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180/222/888?text=Erreur'">
                     <div class="progress-bar" style="width: ${savedTime ? '30%' : '0%'}"></div>
                     <div class="title">${video.titre}</div>
@@ -481,40 +399,39 @@
 
         function jouerVideo(index) {
             if (index < 0 || index >= allVideos.length) return;
-            currentVideoIndex = index;
+            currentVideoIndex = index; focusedGridIndex = index;
             const videoData = allVideos[index];
-            
             const mainVideo = document.getElementById('mainVideo');
-            const mainTitle = document.getElementById('mainTitle');
-            const resumeBadge = document.getElementById('resumeBadge');
             const ambilight = document.getElementById('ambilightBg');
 
-            // Mise à jour Ambilight
-            ambilight.style.backgroundImage = `url('${videoData.vignette}')`;
-            ambilight.classList.add('active');
-
-            mainTitle.textContent = videoData.titre;
+            ambilight.style.backgroundImage = `url('${videoData.vignette}')`; ambilight.classList.add('active');
+            document.getElementById('mainTitle').textContent = videoData.titre;
             mainVideo.querySelector('source').src = videoData.video;
             mainVideo.poster = videoData.vignette;
             mainVideo.playbackRate = playbackSpeeds[currentSpeedIndex];
 
             const savedTime = localStorage.getItem(`progress_${videoData.video}`);
             if (savedTime && parseFloat(savedTime) > 5) {
-                resumeBadge.style.display = 'inline-block';
-                resumeBadge.textContent = `▶ Reprendre à ${formatTime(savedTime)}`;
+                document.getElementById('resumeBadge').style.display = 'inline-block';
+                document.getElementById('resumeBadge').textContent = `▶ Reprendre à ${formatTime(savedTime)}`;
                 mainVideo.currentTime = parseFloat(savedTime);
             } else {
-                resumeBadge.style.display = 'none';
+                document.getElementById('resumeBadge').style.display = 'none';
                 mainVideo.currentTime = 0;
             }
 
-            mainVideo.load();
-            mainVideo.play().catch(() => {});
+            mainVideo.load(); mainVideo.play().catch(() => {});
             
-            // Mettre à jour la grille pour montrer le cadre "active"
+            // PRÉCHARGEMENT INTELLIGENT DE LA VIDÉO SUIVANTE
+            if (index < allVideos.length - 1) {
+                const nextVideo = document.createElement('link');
+                nextVideo.rel = 'prefetch';
+                nextVideo.href = allVideos[index + 1].video;
+                document.head.appendChild(nextVideo);
+            }
+
             const currentFilter = document.querySelector('.filter-tab.active').textContent.includes('Favoris') ? 'favorites' : 'all';
             filtrer(currentFilter, document.querySelector('.filter-tab.active'));
-            
             window.scrollTo({ top: 0, behavior: 'smooth' });
             localStorage.setItem('lastVideoUrl', videoData.video);
         }
@@ -529,8 +446,7 @@
             video.addEventListener('ended', () => {
                 if (currentVideoIndex !== -1 && allVideos[currentVideoIndex]) {
                     localStorage.removeItem(`progress_${allVideos[currentVideoIndex].video}`);
-                    mettreAJourStats(video.duration);
-                    genererContinueWatching(); // Mettre à jour la rangée du haut
+                    mettreAJourStats(video.duration); genererContinueWatching();
                     if (currentVideoIndex < allVideos.length - 1) {
                         showToast("⏭️ Lecture de la vidéo suivante...");
                         setTimeout(() => jouerVideo(currentVideoIndex + 1), 1500);
@@ -544,14 +460,12 @@
             if (lastVideoUrl) {
                 const index = allVideos.findIndex(v => v.video === lastVideoUrl);
                 if (index !== -1) {
-                    currentVideoIndex = index;
-                    const v = allVideos[index];
+                    currentVideoIndex = index; const v = allVideos[index];
                     document.getElementById('mainTitle').textContent = v.titre;
                     document.getElementById('mainVideo').querySelector('source').src = v.video;
                     document.getElementById('mainVideo').poster = v.vignette;
                     document.getElementById('ambilightBg').style.backgroundImage = `url('${v.vignette}')`;
                     document.getElementById('ambilightBg').classList.add('active');
-                    
                     const savedTime = localStorage.getItem(`progress_${v.video}`);
                     if (savedTime && parseFloat(savedTime) > 5) {
                         document.getElementById('resumeBadge').style.display = 'inline-block';
@@ -562,56 +476,51 @@
             }
         }
 
-        function jouerVideoAleatoire() {
-            if (allVideos.length === 0) return;
-            const rnd = Math.floor(Math.random() * allVideos.length);
-            jouerVideo(rnd);
-            showToast(`🎲 Lecture aléatoire`);
-        }
-
+        function jouerVideoAleatoire() { if (allVideos.length === 0) return; jouerVideo(Math.floor(Math.random() * allVideos.length)); showToast(`🎲 Lecture aléatoire`); }
         function genererLienPartage() {
             if (currentVideoIndex === -1) { showToast("⚠️ Lancez d'abord une vidéo"); return; }
-            const v = allVideos[currentVideoIndex];
-            const t = Math.floor(document.getElementById('mainVideo').currentTime);
+            const v = allVideos[currentVideoIndex]; const t = Math.floor(document.getElementById('mainVideo').currentTime);
             const url = `${window.location.origin}${window.location.pathname}?v=${encodeURIComponent(v.video)}&t=${t}`;
             navigator.clipboard.writeText(url).then(() => showToast("🔗 Lien copié avec le timestamp !"));
         }
-
         function chargerVideoDepuisURL() {
-            const params = new URLSearchParams(window.location.search);
-            const vUrl = params.get('v');
-            const t = parseInt(params.get('t')) || 0;
+            const params = new URLSearchParams(window.location.search); const vUrl = params.get('v'); const t = parseInt(params.get('t')) || 0;
             if (vUrl && allVideos.length > 0) {
                 const index = allVideos.findIndex(v => v.video === vUrl);
-                if (index !== -1) {
-                    setTimeout(() => {
-                        jouerVideo(index);
-                        document.getElementById('mainVideo').currentTime = t;
-                        showToast("📍 Reprise depuis le lien partagé");
-                    }, 500);
-                }
+                if (index !== -1) { setTimeout(() => { jouerVideo(index); document.getElementById('mainVideo').currentTime = t; showToast("📍 Reprise depuis le lien partagé"); }, 500); }
             }
         }
-
         function toggleCinemaMode() {
-            const p = document.getElementById('mainPlayer');
-            p.classList.toggle('cinema-mode');
+            const p = document.getElementById('mainPlayer'); p.classList.toggle('cinema-mode');
             showToast(p.classList.contains('cinema-mode') ? "🎬 Mode cinéma activé" : "Mode cinéma désactivé");
         }
 
-        // --- ÉVÉNEMENTS CLAVIER ---
+        // --- MINI PLAYER (Intersection Observer) ---
+        const playerObserver = new IntersectionObserver((entries) => {
+            const player = document.getElementById('mainPlayer');
+            if (!entries[0].isIntersecting && !document.getElementById('mainVideo').paused) {
+                player.classList.add('mini-player');
+            } else {
+                player.classList.remove('mini-player');
+            }
+        }, { threshold: 0.1 });
+        // On l'activera après le chargement
+
+        // --- MENU CONTEXTUEL ---
+        function contextAction(action) {
+            document.getElementById('contextMenu').style.display = 'none';
+            if (!contextTargetVideo) return;
+            const url = contextTargetVideo.video;
+            if (action === 'play') { jouerVideo(allVideos.findIndex(v => v.video === url)); }
+            else if (action === 'fav') { toggleFavorite(url, null); }
+            else if (action === 'copy') { navigator.clipboard.writeText(url).then(() => showToast("🔗 Lien copié !")); }
+        }
+        document.addEventListener('click', () => { document.getElementById('contextMenu').style.display = 'none'; });
+
+        // --- NAVIGATION CLAVIER AVANCÉE ---
         document.addEventListener('keydown', (e) => {
-            if (document.activeElement.id === 'searchInput') {
-                if (e.key === 'Escape') document.activeElement.blur();
-                return;
-            }
-            
-            // Ctrl+K ou Cmd+K pour la recherche
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                document.getElementById('searchInput').focus();
-                return;
-            }
+            if (document.activeElement.id === 'searchInput') { if (e.key === 'Escape') document.activeElement.blur(); return; }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); document.getElementById('searchInput').focus(); return; }
 
             const v = document.getElementById('mainVideo');
             if (e.code === 'Space') { e.preventDefault(); v.paused ? v.play() : v.pause(); }
@@ -620,28 +529,45 @@
             if (e.code === 'KeyM') { e.preventDefault(); v.muted = !v.muted; showToast(v.muted ? "🔇 Muet" : "🔊 Son activé"); }
             if (e.code === 'ArrowRight') { e.preventDefault(); v.currentTime += 10; }
             if (e.code === 'ArrowLeft') { e.preventDefault(); v.currentTime -= 10; }
-            if (e.code === 'KeyS') {
+            if (e.code === 'KeyS') { e.preventDefault(); currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length; v.playbackRate = playbackSpeeds[currentSpeedIndex]; showToast(`⏩ Vitesse : ${playbackSpeeds[currentSpeedIndex]}x`); }
+            
+            // Navigation grille (Flèches)
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code) && document.activeElement.id !== 'searchInput') {
                 e.preventDefault();
-                currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length;
-                v.playbackRate = playbackSpeeds[currentSpeedIndex];
-                showToast(`⏩ Vitesse : ${playbackSpeeds[currentSpeedIndex]}x`);
+                const items = document.querySelectorAll('.video-item');
+                if (items.length === 0) return;
+                const columns = Math.floor(document.querySelector('.video-grid').offsetWidth / 240); // Estimation colonnes
+                
+                if (focusedGridIndex === -1) focusedGridIndex = 0;
+                else {
+                    if (e.code === 'ArrowRight') focusedGridIndex = Math.min(focusedGridIndex + 1, items.length - 1);
+                    if (e.code === 'ArrowLeft') focusedGridIndex = Math.max(focusedGridIndex - 1, 0);
+                    if (e.code === 'ArrowDown') focusedGridIndex = Math.min(focusedGridIndex + columns, items.length - 1);
+                    if (e.code === 'ArrowUp') focusedGridIndex = Math.max(focusedGridIndex - columns, 0);
+                }
+                
+                items.forEach(i => i.classList.remove('focused'));
+                items[focusedGridIndex].classList.add('focused');
+                items[focusedGridIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                if (e.code === 'Enter') {
+                    const idx = parseInt(items[focusedGridIndex].dataset.index);
+                    jouerVideo(idx);
+                }
             }
         });
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const q = e.target.value.toLowerCase();
             const filtered = allVideos.filter(v => v.titre.toLowerCase().includes(q));
-            // Si on cherche, on passe en mode "Toutes" pour voir les résultats
             document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-            document.querySelector('.filter-tab').classList.add('active'); // Le premier est "Toutes"
+            document.querySelector('.filter-tab').classList.add('active');
             afficherGrille(filtered);
         });
 
-        // --- INITIALISATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            chargerToutesLesVideos();
-            setupProgressSaving();
-            chargerVideoDepuisURL();
+            chargerToutesLesVideos(); setupProgressSaving(); chargerVideoDepuisURL();
+            setTimeout(() => playerObserver.observe(document.getElementById('mainPlayer')), 1000);
         });
     </script>
 </body>
