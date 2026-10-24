@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ma Galerie Vidéo</title>
     <style>
-        /* --- STYLE GÉNÉRAL (Thème sombre cinéma) --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -16,7 +15,6 @@
             margin: 0 auto;
         }
 
-        /* --- LECTEUR PRINCIPAL --- */
         .main-player {
             background: #000;
             border-radius: 12px;
@@ -29,7 +27,7 @@
             width: 100%;
             height: auto;
             display: block;
-            max-height: 80vh; /* Ne dépasse pas la hauteur de l'écran */
+            max-height: 80vh;
         }
         .video-info {
             padding: 15px 20px;
@@ -38,10 +36,8 @@
         .video-info h2 {
             font-size: 1.2rem;
             font-weight: 600;
-            color: #fff;
         }
 
-        /* --- LISTE DES VIDÉOS (Grille responsive) --- */
         .video-list-title {
             font-size: 1.1rem;
             margin-bottom: 15px;
@@ -55,7 +51,6 @@
             gap: 15px;
         }
 
-        /* --- VIGNETTE INDIVIDUELLE --- */
         .video-item {
             background: #1a1a1a;
             border-radius: 8px;
@@ -67,7 +62,7 @@
         .video-item:hover {
             transform: translateY(-4px);
             box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-            border-color: #0088cc; /* Couleur de survol */
+            border-color: #0088cc;
         }
         .video-item.active {
             border-color: #0088cc;
@@ -93,10 +88,16 @@
             font-weight: 700;
         }
 
-        /* --- MOBILE --- */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-size: 1.1rem;
+        }
+
         @media (max-width: 600px) {
             .video-grid {
-                grid-template-columns: repeat(2, 1fr); /* 2 colonnes sur mobile */
+                grid-template-columns: repeat(2, 1fr);
                 gap: 10px;
             }
             body { padding: 10px; }
@@ -105,79 +106,88 @@
 </head>
 <body>
 
-    <!-- 1. LECTEUR PRINCIPAL -->
     <div class="main-player">
-        <video id="mainVideo" controls poster="https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Choisissez+une+video">
+        <video id="mainVideo" controls poster="https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Chargement...">
             <source src="" type="video/mp4">
             Votre navigateur ne supporte pas la lecture vidéo.
         </video>
         <div class="video-info">
-            <h2 id="mainTitle">Sélectionnez une vidéo dans la liste ci-dessous</h2>
+            <h2 id="mainTitle">Chargement de la playlist...</h2>
         </div>
     </div>
 
-    <!-- 2. LISTE DES VIDÉOS -->
-    <div class="video-list-title">📁 Playlist</div>
+    <div class="video-list-title">📁 Playlist (<span id="videoCount">0</span> vidéos)</div>
     <div class="video-grid" id="videoGrid">
-        
-        <!-- VIDÉO 1 -->
-        <div class="video-item active" onclick="changerVideo(
-            'https://ia903102.us.archive.org/34/items/ssstwitter.com_1704592879503/ssstwitter.com_1704592879503.mp4', 
-            'https://via.placeholder.com/320x180/333/fff?text=Video+1', 
-            'Titre de la première vidéo', 
-            this)">
-            <img src="https://ia903102.us.archive.org/34/items/ssstwitter.com_1704592879503/ssstwitter.com_1704592879503.mp4" alt="Vignette 1">
-            <div class="title">Titre de la première vidéo</div>
-        </div>
-
-        <!-- VIDÉO 2 -->
-        <div class="video-item" onclick="changerVideo(
-            'https://ia600909.us.archive.org/12/items/ssstwitter.com_1721393088409/ssstwitter.com_1721393088409.mp4', 
-            'https://via.placeholder.com/320x180/444/fff?text=Video+2', 
-            'Deuxième vidéo de la liste', 
-            this)">
-            <img src="https://ia600909.us.archive.org/12/items/ssstwitter.com_1721393088409/ssstwitter.com_1721393088409.mp4" alt="Vignette 2">
-            <div class="title">Deuxième vidéo de la liste</div>
-        </div>
-
-        <!-- VIDÉO 3 (Copiez-collez ce bloc pour en ajouter d'autres) -->
-        <div class="video-item" onclick="changerVideo(
-            'https://archive.org/download/VOTRE_DOSSIER_3/video3.mp4', 
-            'https://via.placeholder.com/320x180/555/fff?text=Video+3', 
-            'Troisième vidéo exemple', 
-            this)">
-            <img src="https://via.placeholder.com/320x180/555/fff?text=Video+3" alt="Vignette 3">
-            <div class="title">Troisième vidéo exemple</div>
-        </div>
-
+        <div class="loading">⏳ Chargement des vidéos...</div>
     </div>
 
-    <!-- 3. SCRIPT JAVASCRIPT POUR CHANGER LA VIDÉO -->
     <script>
-        function changerVideo(urlVideo, urlVignette, titre, elementClique) {
-            // 1. Récupérer le lecteur et le titre
-            const video = document.getElementById('mainVideo');
-            const source = video.querySelector('source');
-            const titreElement = document.getElementById('mainTitle');
+        // URL du fichier JSON (sur le même domaine GitHub)
+        const JSON_URL = 'videos.json';
 
-            // 2. Mettre à jour les sources
-            source.src = urlVideo;
-            video.poster = urlVignette;
-            titreElement.textContent = titre;
+        // Fonction pour charger les vidéos depuis le JSON
+        async function chargerPlaylist() {
+            try {
+                const response = await fetch(JSON_URL);
+                if (!response.ok) throw new Error('Fichier JSON introuvable');
+                const videos = await response.json();
 
-            // 3. Recharger et lancer la lecture
-            video.load();
-            video.play().catch(e => console.log("Lecture auto bloquée par le navigateur, l'utilisateur doit cliquer sur play."));
+                const grid = document.getElementById('videoGrid');
+                const countSpan = document.getElementById('videoCount');
+                countSpan.textContent = videos.length;
 
-            // 4. Mettre à jour l'apparence de la liste (enlever 'active' de tous, ajouter à celui cliqué)
-            document.querySelectorAll('.video-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            elementClique.classList.add('active');
-            
-            // 5. Faire défiler la page vers le lecteur (utile sur mobile)
+                // Vider le message de chargement
+                grid.innerHTML = '';
+
+                // Créer les vignettes dynamiquement
+                videos.forEach((video, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'video-item' + (index === 0 ? ' active' : '');
+                    item.onclick = () => jouerVideo(video, item);
+
+                    item.innerHTML = `
+                        <img src="${video.vignette}" alt="${video.titre}" onerror="this.src='https://via.placeholder.com/320x180/333/fff?text=Pas+de+vignette'">
+                        <div class="title">${video.titre}</div>
+                    `;
+                    grid.appendChild(item);
+                });
+
+                // Lancer automatiquement la première vidéo (sans autoplay pour respecter les navigateurs)
+                if (videos.length > 0) {
+                    document.getElementById('mainTitle').textContent = videos[0].titre;
+                    document.querySelector('#mainVideo source').src = videos[0].video;
+                    document.getElementById('mainVideo').poster = videos[0].vignette;
+                }
+
+            } catch (error) {
+                document.getElementById('videoGrid').innerHTML = 
+                    `<div class="loading">❌ Erreur : ${error.message}<br>Vérifiez que le fichier videos.json existe.</div>`;
+            }
+        }
+
+        // Fonction pour jouer une vidéo au clic
+        function jouerVideo(video, element) {
+            const player = document.getElementById('mainVideo');
+            const source = player.querySelector('source');
+            const titre = document.getElementById('mainTitle');
+
+            source.src = video.video;
+            player.poster = video.vignette;
+            titre.textContent = video.titre;
+
+            player.load();
+            player.play().catch(e => console.log('Autoplay bloqué'));
+
+            // Mettre à jour la classe active
+            document.querySelectorAll('.video-item').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+
+            // Scroll smooth vers le lecteur
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+
+        // Charger la playlist au démarrage
+        chargerPlaylist();
     </script>
 
 </body>
