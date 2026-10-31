@@ -123,6 +123,20 @@
         .btn-primary:hover { background: #f40612; }
         .stats-display { color: var(--text-muted); font-size: 0.85rem; margin-left: auto; }
 
+        /* Style bouton Cast */
+        #castBtn {
+            background: linear-gradient(135deg, #4285f4, #34a853);
+            border: none;
+        }
+        #castBtn:hover {
+            background: linear-gradient(135deg, #3367d6, #2d8e47);
+            transform: translateY(-1px);
+        }
+        #castBtn.connected {
+            background: linear-gradient(135deg, #34a853, #0f9d58);
+            animation: pulse 2s infinite;
+        }
+
         .video-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .filter-tabs { display: flex; gap: 10px; }
         .filter-tab {
@@ -265,6 +279,7 @@
     <div class="quick-actions">
         <button class="btn-action btn-primary" onclick="jouerVideoAleatoire()">🎲 Aléatoire</button>
         <button class="btn-action" onclick="genererLienPartage()">🔗 Partager</button>
+        <button class="btn-action" id="castBtn" onclick="casterVideo()" title="Caster sur un écran (AirPlay / Chromecast)">📺 Caster</button>
         <button class="btn-action" onclick="showStats()">📊 Stats</button>
         <button class="btn-action" onclick="toggleABLoop('a')" title="Point A (L)">🔵 A</button>
         <button class="btn-action" onclick="toggleABLoop('b')" title="Point B (L)">🔴 B</button>
@@ -338,6 +353,10 @@
         let focusedGridIndex = -1;
         let abLoop = { a: null, b: null, active: false };
         let wakeLock = null;
+
+        // --- CASTING VARIABLES ---
+        let castSession = null;
+        let castConnected = false;
 
         // --- UTILITAIRES ---
         function obtenirVignetteAuto(urlVideo) {
@@ -794,6 +813,209 @@
                 }
             }
         });
+
+        // --- CASTING (AirPlay, Chromecast, Fallback) ---
+        async function casterVideo() {
+            const video = document.getElementById('mainVideo');
+            const castBtn = document.getElementById('castBtn');
+
+            // Vérifier qu'une vidéo est en cours
+            if (!video.src && currentVideoIndex === -1) {
+                showToast("⚠️ Lancez d'abord une vidéo");
+                return;
+            }
+            
+            const videoUrl = currentVideoIndex !== -1 ? allVideos[currentVideoIndex].video : video.src;
+            const currentTime = video.currentTime || 0;
+            const isPlaying = !video.paused;
+
+            // 1. Essayer AirPlay (Safari, iOS, macOS)
+            if (typeof video.webkitShowPlaybackTargetPicker === 'function') {
+                try {
+                    video.webkitShowPlaybackTargetPicker();
+                    showToast("📺 Sélecteur AirPlay ouvert");
+                    return;
+                } catch (err) {
+                    console.log("AirPlay non disponible:", err);
+                }
+            }
+
+            // 2. Essayer Google Cast via Cast SDK Framework
+            if (window.cast && window.cast.framework) {
+                try {
+                    await lancerCastFramework(videoUrl, currentTime, isPlaying);
+                    return;
+                } catch (err) {
+                    console.log("Cast Framework error:", err);
+                }
+            }
+
+            // 3. Essayer Chrome Cast legacy API
+            if (window.chrome && window.chrome.cast) {
+                try {
+                    await lancerCastChromecast(videoUrl, currentTime, isPlaying);
+                    return;
+                } catch (err) {
+                    console.log("Cast legacy error:", err);
+                }
+            }
+
+            // 4. Charger le SDK Cast à la demande
+            if (!window.__castSdkLoaded) {
+                window.__castSdkLoaded = true;
+                showToast("⏳ Chargement du SDK Chromecast...");
+                const castScript = document.createElement('script');
+                castScript.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
+                castScript.onerror = () => {
+                    showToast("📺 Cast non disponible — vidéo ouverte dans un nouvel onglet");
+                    window.open(videoUrl, '_blank');
+                };
+                castScript.onload = () => {
+                    // Réessayer après un court délai
+                    setTimeout(() => casterVideo(), 2000);
+                };
+                document.head.appendChild(castScript);
+                return;
+            }
+
+            // 5. Fallback : ouvrir dans un nouvel onglet
+            showToast("💡 Aucune cible trouvée — vidéo ouverte dans un nouvel onglet");
+            window.open(videoUrl, '_blank');
+        }
+
+        async function lancerCastFramework(videoUrl, currentTime, isPlaying) {
+            const context = cast.framework.CastContext.getInstance();
+            const castBtn = document.getElementById('castBtn');
+
+            // Vérifier si une session est déjà active
+            if (context.getCastState() === cast.framework.CastState.CONNECTED) {
+                // Déconnecter la session
+                await context.endCurrentSession(true);
+                castConnected = false;
+                castBtn.classList.remove('connected');
+                castBtn.textContent = '📺 Caster';
+                showToast("📺 Cast déconnecté");
+                return;
+            }
+
+            try {
+                // Demander une nouvelle session
+                await context.requestSession();
+                
+                const castSession = context.getCurrentSession();
+                if (castSession) {
+                    const mediaInfo = new chrome.cast.media.MediaInfo(videoUrl, 'video/mp4');
+                    const request = new chrome.cast.media.LoadRequest(mediaInfo);
+                    request.currentTime = currentTime;
+                    request.autoplay = isPlaying;
+
+                    await castSession.loadMedia(request);
+                    
+                    castConnected = true;
+                    castBtn.classList.add('connected');
+                    castBtn.textContent = '📺 Connecté';
+                    showToast("📺 Vidéo castée avec succès !");
+                    
+                    // Pause sur le navigateur pour éviter la double lecture
+                    document.getElementById('mainVideo').pause();
+                }
+            } catch (err) {
+                console.log("Erreur cast framework:", err);
+                if (err === 'cancel') {
+                    showToast("📺 Cast annulé");
+                } else {
+                    showToast("❌ Erreur de cast");
+                }
+            }
+        }
+
+        async function lancerCastChromecast(videoUrl, currentTime, isPlaying) {
+            if (!castSession) {
+                return new Promise((resolve, reject) => {
+                    const sessionRequest = new chrome.cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID);
+                    const apiConfig = new chrome.cast.ApiConfig(
+                        sessionRequest,
+                        (session) => { 
+                            castSession = session; 
+                            envoyerSurChromecast(videoUrl, currentTime, isPlaying, resolve, reject);
+                        },
+                        (availability) => {
+                            if (availability === 'available') {
+                                chrome.cast.requestSession(
+                                    (session) => { 
+                                        castSession = session;
+                                        envoyerSurChromecast(videoUrl, currentTime, isPlaying, resolve, reject);
+                                    },
+                                    (err) => {
+                                        showToast("❌ Échec de connexion");
+                                        reject(err);
+                                    }
+                                );
+                            } else {
+                                showToast("📺 Aucun Chromecast détecté");
+                                reject(new Error('No devices'));
+                            }
+                        }
+                    );
+                    chrome.cast.initialize(apiConfig, () => {}, (err) => reject(err));
+                });
+            } else {
+                envoyerSurChromecast(videoUrl, currentTime, isPlaying);
+            }
+        }
+
+        function envoyerSurChromecast(videoUrl, currentTime, isPlaying, resolve, reject) {
+            const castBtn = document.getElementById('castBtn');
+            const mediaInfo = new chrome.cast.media.MediaInfo(videoUrl, 'video/mp4');
+            const request = new chrome.cast.media.LoadRequest(mediaInfo);
+            request.currentTime = currentTime;
+            request.autoplay = isPlaying;
+            
+            castSession.loadMedia(request,
+                () => {
+                    showToast("📺 Vidéo castée !");
+                    castConnected = true;
+                    castBtn.classList.add('connected');
+                    castBtn.textContent = '📺 Connecté';
+                    // Pause sur le navigateur pour éviter la double lecture
+                    document.getElementById('mainVideo').pause();
+                    if (resolve) resolve();
+                },
+                (err) => {
+                    showToast("❌ Erreur de cast : " + err.code);
+                    if (reject) reject(err);
+                }
+            );
+        }
+
+        // Initialisation du framework Cast si disponible
+        window['__onGCastApiAvailable'] = function(isAvailable) {
+            if (isAvailable && window.cast && window.cast.framework) {
+                try {
+                    const context = cast.framework.CastContext.getInstance();
+                    context.setOptions({
+                        receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+                        autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+                    });
+                    
+                    // Écouter les changements d'état de la session
+                    context.addEventListener(
+                        cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+                        (event) => {
+                            const castBtn = document.getElementById('castBtn');
+                            if (event.sessionState === cast.framework.SessionState.SESSION_ENDED) {
+                                castConnected = false;
+                                castBtn.classList.remove('connected');
+                                castBtn.textContent = '📺 Caster';
+                                showToast("📺 Cast déconnecté");
+                            }
+                        }
+                    );
+                } catch (err) {
+                    console.log("Erreur initialisation Cast Framework:", err);
+                }
+            }
+        };
 
         // --- INITIALISATION ---
         document.addEventListener('DOMContentLoaded', () => {
