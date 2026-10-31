@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Convertisseur de logo PWA</title>
+<style>
+body{font-family:system-ui;background:#111;color:#fff;display:flex;flex-direction:column;align-items:center;padding:30px;gap:20px}
+#drop{width:min(420px,90vw);aspect-ratio:1;border:2px dashed #555;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#181818;overflow:hidden}
+#drop img{max-width:100%;max-height:100%}
+button{background:#e50914;border:0;color:#fff;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;margin-top:6px}
+.grid{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.card{background:#181818;padding:12px;border-radius:12px;text-align:center}
+small{color:#aaa;display:block;margin-top:4px}
+</style>
+</head>
+<body>
+<h1>🎨 Convertisseur de logo PWA</h1>
+<p>Glissez-déposez votre logo (carré de préférence) :</p>
+<div id="drop">Déposez l'image ici</div>
+<div class="grid" id="out"></div>
+<button id="dlManifest" disabled>⬇️ Télécharger manifest.webmanifest</button>
+<script>
+const drop=document.getElementById('drop'),out=document.getElementById('out'),btnM=document.getElementById('dlManifest');
+let src=null;
+const TAILLES=[
+ {n:'icon-48.png',s:48},
+ {n:'icon-192.png',s:192},
+ {n:'icon-512.png',s:512},
+ {n:'apple-touch-icon.png',s:180},
+ {n:'maskable-192.png',s:192,m:1},
+ {n:'maskable-512.png',s:512,m:1}
+];
+function handle(file){
+ if(!file||!file.type.startsWith('image/'))return;
+ const img=new Image();
+ img.onload=()=>{src=img;generer();};
+ img.src=URL.createObjectURL(file);
+}
+drop.addEventListener('click',()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=e=>handle(e.target.files[0]);i.click();});
+drop.addEventListener('dragover',e=>e.preventDefault());
+drop.addEventListener('drop',e=>{e.preventDefault();handle(e.dataTransfer.files[0]);});
+function generer(){
+ out.innerHTML='';drop.innerHTML='';drop.appendChild(src);
+ TAILLES.forEach(t=>{
+   const c=document.createElement('canvas');c.width=c.height=t.s;
+   const x=c.getContext('2d');
+   x.fillStyle='#0f0f0f';x.fillRect(0,0,t.s,t.s);      // fond assorti au thème
+   const ratio=t.m?0.8:1;                               // safe-zone 80% si maskable
+   const scale=Math.min((t.s*ratio)/src.width,(t.s*ratio)/src.height);
+   const dw=src.width*scale,dh=src.height*scale;
+   x.drawImage(src,(t.s-dw)/2,(t.s-dh)/2,dw,dh);
+   const card=document.createElement('div');card.className='card';
+   const prev=document.createElement('canvas');prev.width=prev.height=96;
+   prev.getContext('2d').drawImage(c,0,0,96,96);
+   const lab=document.createElement('small');lab.textContent=t.n+' ('+t.s+'×'+t.s+(t.m?', maskable':'')+')';
+   const b=document.createElement('button');b.textContent='⬇️ '+t.n;
+   b.onclick=()=>{const a=document.createElement('a');a.download=t.n;a.href=c.toDataURL('image/png');a.click();};
+   card.append(prev,lab,b);out.appendChild(card);
+ });
+ btnM.disabled=false;
+}
+btnM.onclick=()=>{
+ const manifest={
+  name:"Rainbow Cinema",short_name:"Rainbow",
+  description:"Votre cinéma personnel : vidéos, radio, cast.",
+  lang:"fr",start_url:"./",scope:"./",display:"standalone",
+  background_color:"#0f0f0f",theme_color:"#e50914",
+  icons:[
+   {src:"icons/icon-48.png",sizes:"48x48",type:"image/png"},
+   {src:"icons/icon-192.png",sizes:"192x192",type:"image/png"},
+   {src:"icons/icon-512.png",sizes:"512x512",type:"image/png"},
+   {src:"icons/maskable-192.png",sizes:"192x192",type:"image/png",purpose:"maskable"},
+   {src:"icons/maskable-512.png",sizes:"512x512",type:"image/png",purpose:"maskable"}
+  ]
+ };
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([JSON.stringify(manifest,null,2)],{type:'application/manifest+json'}));
+ a.download='manifest.webmanifest';a.click();
+};
+</script>
+</body>
+</html>
