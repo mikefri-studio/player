@@ -1643,5 +1643,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(genererContinueWatching, 60000);
 });
 </script>
+    <script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
 </body>
 </html>
