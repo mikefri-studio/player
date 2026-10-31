@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rainbow Cinema — Cast Edition</title>
+<title>Rainbow Cinema — Radio Edition</title>
 <meta name="theme-color" content="#e50914">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
 <style>
@@ -17,6 +17,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 @keyframes slideDown{from{transform:translate(-50%,0);opacity:1}to{transform:translate(-50%,100px);opacity:0}}
 @keyframes heartBeat{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes eq{0%,100%{height:5px}50%{height:20px}}
+@keyframes pulseBtn{0%,100%{box-shadow:0 0 0 0 var(--primary-glow)}50%{box-shadow:0 0 0 10px transparent}}
 .ambilight-bg{position:fixed;inset:0;background-size:cover;background-position:center;filter:blur(80px) brightness(.25);z-index:-1;transition:background-image .8s ease-in-out;opacity:0}
 .ambilight-bg.active{opacity:1}
 .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
@@ -51,13 +53,44 @@ video{width:100%;height:auto;display:block;max-height:70vh;background:#000}
 .video-info{padding:15px 20px;background:var(--bg-card);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
 .video-info h2{font-size:1.3rem;font-weight:600;flex:1;min-width:200px}
 .badge-resume{background:var(--primary);color:#fff;font-size:.75rem;padding:4px 10px;border-radius:4px;display:none;white-space:nowrap;font-weight:600}
-.quick-actions{display:flex;gap:10px;margin-bottom:25px;flex-wrap:wrap;align-items:center}
+.quick-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
 .btn-action{background:var(--bg-elev);color:var(--text-main);border:none;padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:600;font-size:.9rem;transition:.2s;display:flex;align-items:center;gap:6px}
 .btn-action:hover{filter:brightness(1.25);transform:translateY(-1px)}
 .btn-primary{background:var(--primary);color:#fff}
 #castBtn{background:linear-gradient(135deg,#4285f4,#34a853);color:#fff}
 #castBtn.casting{background:linear-gradient(135deg,#34a853,#0f9d58);box-shadow:0 0 16px rgba(52,168,83,.6)}
+#radioBtn.radio-active{background:linear-gradient(135deg,var(--primary),#ff6b35);color:#fff;animation:pulseBtn 2s infinite}
 .stats-display{color:var(--text-muted);font-size:.85rem;margin-left:auto}
+
+/* ---------- RADIO ---------- */
+.radio-panel{display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:22px}
+.radio-panel.open{display:block;animation:fadeIn .3s ease}
+.radio-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.radio-power{background:var(--primary);color:#fff;border:none;padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:700;min-width:110px}
+.radio-power:hover{filter:brightness(1.2)}
+.radio-now{font-size:.95rem;font-weight:600;flex:1;min-width:160px}
+.equalizer{display:flex;gap:3px;align-items:flex-end;height:20px;opacity:0;transition:.3s}
+.equalizer.on{opacity:1}
+.equalizer span{width:4px;background:var(--primary);border-radius:2px;animation:eq 1s ease-in-out infinite}
+.equalizer span:nth-child(2){animation-delay:.15s}
+.equalizer span:nth-child(3){animation-delay:.3s}
+.equalizer span:nth-child(4){animation-delay:.45s}
+.radio-stations{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.station-chip{background:var(--bg-elev);border:1px solid var(--border);border-radius:20px;padding:7px 14px;cursor:pointer;font-size:.85rem;display:flex;gap:7px;align-items:center;transition:.2s;color:var(--text-main)}
+.station-chip:hover{border-color:var(--primary);transform:translateY(-1px)}
+.station-chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.station-genre{opacity:.6;font-size:.7rem}
+.station-del{margin-left:2px;opacity:.7;font-weight:700}
+.station-del:hover{opacity:1}
+.radio-custom{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.radio-custom input{flex:1;min-width:220px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text-main);outline:none}
+.radio-custom input:focus{border-color:var(--primary)}
+.mixer-row{display:flex;align-items:center;gap:12px;margin-bottom:8px;font-size:.88rem;flex-wrap:wrap}
+.mixer-row>span{min-width:180px}
+.mixer-row input[type=range]{flex:1;min-width:130px;accent-color:var(--primary)}
+.mixer-row select{background:var(--bg-elev);color:var(--text-main);border:1px solid var(--border);border-radius:6px;padding:5px 8px}
+/* ---------------------------- */
+
 .video-list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;border-bottom:1px solid var(--border);padding-bottom:10px;gap:10px;flex-wrap:wrap}
 .filter-tabs{display:flex;gap:10px;flex-wrap:wrap}
 .filter-tab{background:none;border:1px solid var(--border);color:var(--text-muted);padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.85rem;transition:.2s}
@@ -155,13 +188,49 @@ body{padding:10px}
 <div class="quick-actions">
     <button class="btn-action btn-primary" onclick="jouerVideoAleatoire()">🎲 Aléatoire</button>
     <button class="btn-action" onclick="genererLienPartage()">🔗 Partager</button>
-    <button class="btn-action" id="castBtn" onclick="casterVideo()" title="Diffuser sur un écran (K)">📺 Caster</button>
+    <button class="btn-action" id="castBtn" onclick="casterVideo()" title="Diffuser sur un écran">📺 Caster</button>
+    <button class="btn-action" id="radioBtn" onclick="toggleRadioPanel()" title="Radio en fond sonore">📻 Radio</button>
     <button class="btn-action" onclick="showStats()">📊 Stats</button>
     <button class="btn-action" onclick="toggleABLoop('a')">🔵 A</button>
     <button class="btn-action" onclick="toggleABLoop('b')">🔴 B</button>
     <button class="btn-action" onclick="toggleNotesPanel()">📝 Notes</button>
     <div class="stats-display" id="statsDisplay">📊 Calcul des stats...</div>
 </div>
+
+<!-- ============ PANNEAU RADIO ============ -->
+<div class="radio-panel" id="radioPanel">
+    <div class="radio-top">
+        <button class="radio-power" id="radioPower" onclick="toggleRadio()">▶ Écouter</button>
+        <span class="radio-now" id="radioNow">Choisissez une station</span>
+        <div class="equalizer" id="radioEq"><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="radio-stations" id="radioStations"></div>
+    <div class="radio-custom">
+        <input type="url" id="radioCustomUrl" placeholder="Ajouter un flux personnalisé (https://exemple.com/stream.mp3)">
+        <button class="btn-action" onclick="playCustomStation()">+ Ajouter / Lire</button>
+    </div>
+    <div class="radio-mixers">
+        <div class="mixer-row">
+            <span>📻 Volume radio</span>
+            <input type="range" id="radioVolume" min="0" max="100" value="80" oninput="setRadioVolume(this.value)">
+        </div>
+        <div class="mixer-row">
+            <span>🎬 Volume vidéo (mix)</span>
+            <input type="range" id="videoMixVolume" min="0" max="100" value="0" oninput="setVideoMixVolume(this.value)">
+        </div>
+        <div class="mixer-row">
+            <span>😴 Arrêt auto de la radio</span>
+            <select id="sleepTimer" onchange="setSleepTimer(this.value)">
+                <option value="0">Jamais</option>
+                <option value="15">Dans 15 min</option>
+                <option value="30">Dans 30 min</option>
+                <option value="60">Dans 1 h</option>
+            </select>
+        </div>
+    </div>
+</div>
+<audio id="radioPlayer" preload="none"></audio>
+<!-- ======================================== -->
 
 <div class="video-list-header">
     <span id="libraryCount">📁 Bibliothèque</span>
@@ -236,9 +305,9 @@ body{padding:10px}
 const CONFIG = {
     ARCHIVE_USERNAME: "Mikeboy58",
     MAX_VIDEOS: 100,
-    META_CONCURRENCY: 6,      // requêtes métadonnées en parallèle
-    THUMB_CONCURRENCY: 2,     // captures vidéo simultanées
-    THUMB_SEEK_RATIO: 0.12,   // on capture à 12% de la durée (évite les fondus noirs)
+    META_CONCURRENCY: 6,
+    THUMB_CONCURRENCY: 2,
+    THUMB_SEEK_RATIO: 0.12,
     META_TTL: 1000 * 60 * 60 * 12
 };
 
@@ -271,9 +340,7 @@ function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c =>
         ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
-function encodePath(name) {
-    return String(name).split('/').map(encodeURIComponent).join('/');
-}
+function encodePath(name) { return String(name).split('/').map(encodeURIComponent).join('/'); }
 function fileUrl(identifier, name) {
     return `https://archive.org/download/${encodeURIComponent(identifier)}/${encodePath(name)}`;
 }
@@ -294,15 +361,13 @@ function showToast(msg, duree = 3000) {
 async function pool(items, limit, worker) {
     const out = new Array(items.length);
     let i = 0;
-    const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
         while (i < items.length) { const idx = i++; try { out[idx] = await worker(items[idx], idx); } catch { out[idx] = null; } }
-    });
-    await Promise.all(runners);
+    }));
     return out;
 }
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
-/* Placeholder SVG unique par titre : plus jamais 2 vignettes identiques */
 function placeholderFor(title) {
     let hash = 0;
     const str = String(title || '?');
@@ -322,7 +387,7 @@ function placeholderFor(title) {
 }
 
 /* ============================================================
-   CACHE INDEXEDDB (vignettes + métadonnées)
+   CACHE INDEXEDDB
    ============================================================ */
 const Cache = (() => {
     let dbp = null;
@@ -384,14 +449,12 @@ const Cache = (() => {
 })();
 
 /* ============================================================
-   PROGRESSION (format {t,d} + rétrocompat ancien format)
+   PROGRESSION
    ============================================================ */
 function getProgress(url) {
     const raw = localStorage.getItem('progress_' + url);
     if (!raw) return null;
-    try {
-        if (raw.trim().startsWith('{')) { const o = JSON.parse(raw); return { t: +o.t || 0, d: +o.d || 0 }; }
-    } catch {}
+    try { if (raw.trim().startsWith('{')) { const o = JSON.parse(raw); return { t: +o.t || 0, d: +o.d || 0 }; } } catch {}
     return { t: parseFloat(raw) || 0, d: 0 };
 }
 function setProgress(url, t, d) {
@@ -438,7 +501,6 @@ function changeColor(color, el) {
 function openSettings() { $('settingsModal').classList.add('active'); majInfoCache(); }
 function closeSettings() { $('settingsModal').classList.remove('active'); }
 $('settingsModal').addEventListener('click', e => { if (e.target.id === 'settingsModal') closeSettings(); });
-$('autoThumbSwitch').checked = state.autoThumb;
 
 function toggleAutoThumb(on) {
     state.autoThumb = on;
@@ -456,7 +518,16 @@ async function viderCacheVignettes() {
     renderGrid();
 }
 function exportData() {
-    const data = { favorites: state.favorites, stats: JSON.parse(localStorage.getItem('viewingStats') || '{}'), progress: {}, notes: {} };
+    const data = {
+        favorites: state.favorites,
+        stats: JSON.parse(localStorage.getItem('viewingStats') || '{}'),
+        progress: {}, notes: {},
+        radio: {
+            custom: Radio.custom,
+            current: Radio.current,
+            volumes: { radio: $('radioVolume').value, mix: $('videoMixVolume').value }
+        }
+    };
     for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (k?.startsWith('progress_')) data.progress[k] = localStorage.getItem(k);
@@ -480,19 +551,204 @@ function importData(e) {
             if (d.stats) localStorage.setItem('viewingStats', JSON.stringify(d.stats));
             if (d.progress) Object.entries(d.progress).forEach(([k, v]) => localStorage.setItem(k, v));
             if (d.notes) Object.entries(d.notes).forEach(([k, v]) => localStorage.setItem(k, v));
+            if (d.radio?.custom) { Radio.custom = d.radio.custom; localStorage.setItem('radioCustom', JSON.stringify(d.radio.custom)); }
             showToast('📥 Données importées');
-            renderGrid(); genererContinueWatching(); afficherStats();
+            renderGrid(); genererContinueWatching(); afficherStats(); renderStations();
         } catch { showToast('❌ Fichier invalide'); }
     };
     r.readAsText(file);
     e.target.value = '';
 }
 function resetAllData() {
-    if (!confirm('⚠️ Effacer TOUTES les données (favoris, progression, notes, stats) ?')) return;
+    if (!confirm('⚠️ Effacer TOUTES les données (favoris, progression, notes, stats, radio) ?')) return;
     localStorage.clear();
     Cache.clear('thumbs'); Cache.clear('meta');
     showToast('🗑️ Données effacées');
     setTimeout(() => location.reload(), 600);
+}
+
+/* ============================================================
+   📻 MODULE RADIO
+   ============================================================ */
+const Radio = {
+    stations: [
+        { nom: 'France Inter',     url: 'https://icecast.radiofrance.fr/franceinter-midfi.mp3',       genre: 'Généraliste' },
+        { nom: 'franceinfo',       url: 'https://icecast.radiofrance.fr/franceinfo-midfi.mp3',        genre: 'Info' },
+        { nom: 'FIP',              url: 'https://icecast.radiofrance.fr/fip-midfi.mp3',               genre: 'Éclectique' },
+        { nom: 'France Musique',   url: 'https://icecast.radiofrance.fr/francemusique-midfi.mp3',     genre: 'Classique' },
+        { nom: 'TSF Jazz',         url: 'https://tsfjazz.ice.infomaniak.ch/tsfjazz-high.mp3',         genre: 'Jazz' },
+        { nom: 'Radio Nova',       url: 'https://novazz.ice.infomaniak.ch/novazz-128.mp3',            genre: 'Musique' },
+        { nom: 'Radio Meuh',       url: 'https://radiomeuh.ice.infomaniak.ch/radiomeuh-128.mp3',      genre: 'Groove' },
+        { nom: 'Groove Salad',     url: 'https://ice1.somafm.com/groovesalad-128-mp3',                genre: 'Ambient' },
+        { nom: 'Drone Zone',       url: 'https://ice1.somafm.com/dronezone-128-mp3',                  genre: 'Ambient' },
+        { nom: 'Indie Pop Rocks',  url: 'https://ice1.somafm.com/indiepop-128-mp3',                   genre: 'Indie' },
+        { nom: 'Radio Paradise',   url: 'https://stream.radioparadise.com/mp3-192',                   genre: 'Éclectique' }
+    ],
+    custom: JSON.parse(localStorage.getItem('radioCustom') || '[]'),
+    current: JSON.parse(localStorage.getItem('radioCurrent') || 'null'),
+    on: false,
+    sleepTimeout: null,
+    prevVideoVolume: 1
+};
+
+function toggleRadioPanel() {
+    const p = $('radioPanel');
+    p.classList.toggle('open');
+    if (p.classList.contains('open')) renderStations();
+}
+
+function renderStations() {
+    const box = $('radioStations');
+    box.innerHTML = '';
+    const all = [...Radio.stations, ...Radio.custom];
+    all.forEach((s, i) => {
+        const chip = document.createElement('button');
+        chip.className = 'station-chip' + (Radio.current?.url === s.url ? ' active' : '');
+        const name = document.createElement('span');
+        name.textContent = s.nom;
+        const genre = document.createElement('span');
+        genre.className = 'station-genre';
+        genre.textContent = s.genre || '';
+        chip.append(name, genre);
+        chip.addEventListener('click', () => selectStation(s));
+        if (i >= Radio.stations.length) {
+            const del = document.createElement('span');
+            del.className = 'station-del';
+            del.textContent = '✕';
+            del.title = 'Retirer cette station';
+            del.addEventListener('click', e => { e.stopPropagation(); removeCustomStation(i - Radio.stations.length); });
+            chip.appendChild(del);
+        }
+        box.appendChild(chip);
+    });
+}
+
+function selectStation(station) {
+    Radio.current = station;
+    localStorage.setItem('radioCurrent', JSON.stringify(station));
+    $('radioNow').textContent = '📻 ' + station.nom;
+    renderStations();
+    startRadio();
+}
+
+async function startRadio() {
+    const player = $('radioPlayer');
+    if (!Radio.current) { showToast('⚠️ Choisissez une station'); return; }
+    if (player.src !== Radio.current.url) player.src = Radio.current.url;
+    player.volume = $('radioVolume').value / 100;
+    $('radioNow').textContent = '⏳ Connexion à ' + Radio.current.nom + '…';
+    try {
+        await player.play();
+        Radio.on = true;
+        activerModeRadio();
+        majRadioUI();
+        showToast(`📻 ${Radio.current.nom} — vidéo en sourdine`);
+    } catch {
+        Radio.on = false;
+        majRadioUI();
+        showToast('❌ Impossible de lire cette station');
+    }
+}
+
+function stopRadio(silent) {
+    const player = $('radioPlayer');
+    player.pause();
+    player.removeAttribute('src');
+    player.load();
+    Radio.on = false;
+    desactiverModeRadio();
+    clearTimeout(Radio.sleepTimeout);
+    $('sleepTimer').value = '0';
+    majRadioUI();
+    if (!silent) showToast('📻 Radio arrêtée — son vidéo restauré');
+}
+
+function toggleRadio() { Radio.on ? stopRadio() : startRadio(); }
+
+/* Coupe le son de la vidéo pendant que la radio joue */
+function activerModeRadio() {
+    Radio.prevVideoVolume = video.volume;
+    video.volume = $('videoMixVolume').value / 100;   // 0 par défaut = vidéo muette
+    localStorage.setItem('radioMode', '1');
+}
+function desactiverModeRadio() {
+    video.volume = Radio.prevVideoVolume || 1;
+    localStorage.setItem('radioMode', '0');
+}
+/* Réapplique le mix quand une nouvelle vidéo démarre */
+function appliquerMixRadio() {
+    if (localStorage.getItem('radioMode') === '1') {
+        video.volume = ($('videoMixVolume').value || 0) / 100;
+    }
+}
+
+function majRadioUI() {
+    $('radioBtn').classList.toggle('radio-active', Radio.on);
+    $('radioPower').textContent = Radio.on ? '⏸ Arrêter' : '▶ Écouter';
+    $('radioEq').classList.toggle('on', Radio.on);
+    if (!Radio.on && Radio.current) $('radioNow').textContent = '⏸ ' + Radio.current.nom + ' (en pause)';
+    if (!Radio.on && !Radio.current) $('radioNow').textContent = 'Choisissez une station';
+}
+
+function setRadioVolume(v) {
+    $('radioPlayer').volume = v / 100;
+    localStorage.setItem('radioVolume', v);
+}
+function setVideoMixVolume(v) {
+    localStorage.setItem('videoMixVolume', v);
+    if (localStorage.getItem('radioMode') === '1') video.volume = v / 100;
+}
+function setSleepTimer(min) {
+    clearTimeout(Radio.sleepTimeout);
+    min = parseInt(min);
+    if (!min) return;
+    Radio.sleepTimeout = setTimeout(() => {
+        stopRadio(true);
+        showToast('😴 Radio arrêtée (minuteur)');
+    }, min * 60000);
+    showToast(`😴 La radio s'arrêtera dans ${min} min`);
+}
+
+function playCustomStation() {
+    const input = $('radioCustomUrl');
+    const url = input.value.trim();
+    if (!/^https?:\/\/.+/.test(url)) { showToast('⚠️ URL invalide'); return; }
+    let station = Radio.custom.find(s => s.url === url);
+    if (!station) {
+        const defaut = (url.split('/').filter(Boolean).pop() || 'Ma radio').slice(0, 40);
+        const nom = prompt('Nom de la station :', defaut);
+        if (nom === null) return;
+        station = { nom: nom.trim() || defaut, url, genre: 'perso' };
+        Radio.custom.push(station);
+        localStorage.setItem('radioCustom', JSON.stringify(Radio.custom));
+        showToast('✅ Station ajoutée');
+    }
+    input.value = '';
+    selectStation(station);
+}
+function removeCustomStation(i) {
+    Radio.custom.splice(i, 1);
+    localStorage.setItem('radioCustom', JSON.stringify(Radio.custom));
+    renderStations();
+    showToast('🗑️ Station retirée');
+}
+
+function initRadio() {
+    const rv = localStorage.getItem('radioVolume');   if (rv) $('radioVolume').value = rv;
+    const mv = localStorage.getItem('videoMixVolume'); if (mv) $('videoMixVolume').value = mv;
+    $('autoThumbSwitch').checked = state.autoThumb;
+    if (Radio.current) $('radioNow').textContent = '⏸ ' + Radio.current.nom;
+    renderStations();
+    if (localStorage.getItem('radioMode') === '1') {
+        showToast('📻 Mode radio actif — cliquez sur Écouter pour démarrer', 4500);
+        video.volume = ($('videoMixVolume').value || 0) / 100;
+    }
+    const player = $('radioPlayer');
+    player.addEventListener('playing', () => { if (Radio.current) $('radioNow').textContent = '📻 ' + Radio.current.nom; });
+    player.addEventListener('stalled', () => { if (Radio.on) $('radioNow').textContent = '⏳ Reconnexion…'; });
+    player.addEventListener('error', () => {
+        if (Radio.on) { showToast('❌ Flux radio interrompu'); stopRadio(true); }
+    });
 }
 
 /* ============================================================
@@ -571,7 +827,7 @@ function toggleFavorite(url, ev) {
 }
 
 /* ============================================================
-   MÉTADONNÉES ARCHIVE.ORG  → vignette PAR FICHIER
+   MÉTADONNÉES ARCHIVE.ORG
    ============================================================ */
 function choisirFichierVideo(files) {
     const mp4 = files.filter(f => f.name && /\.mp4$/i.test(f.name));
@@ -588,31 +844,21 @@ function choisirFichierVideo(files) {
     return mp4[0];
 }
 
-/* LE correctif principal : on cherche le dérivé thumbnail lié à CE fichier */
 function choisirVignette(files, identifier, videoName) {
     const base = videoName.replace(/\.[^.]+$/, '');
     const isImg = f => /\.(png|jpe?g)$/i.test(f.name || '');
     const isThumb = f => /thumb/i.test(f.format || '') || /thumb/i.test(f.name || '');
-
-    // 1. thumbnail dérivé explicitement rattaché au fichier vidéo
     let t = files.find(f => isImg(f) && f.original && f.original === videoName && isThumb(f));
     if (t) return { url: fileUrl(identifier, t.name), kind: 'file' };
-
-    // 2. thumbnail dont le nom dérive du fichier (ex: "titre.thumbs/titre_000003.png")
     t = files.find(f => isImg(f) && isThumb(f) && (f.name.includes(base + '.') || f.name.includes(base + '/')));
     if (t) return { url: fileUrl(identifier, t.name), kind: 'file' };
-
-    // 3. n'importe quel thumbnail dérivé (souvent dans un dossier .thumbs)
     const thumbs = files.filter(f => isImg(f) && isThumb(f) && f.source === 'derivative');
     if (thumbs.length) {
-        const mid = thumbs[Math.floor(thumbs.length / 2)]; // milieu = plus représentatif
+        const mid = thumbs[Math.floor(thumbs.length / 2)];
         return { url: fileUrl(identifier, mid.name), kind: 'item' };
     }
-
-    // 4. couverture d'item (dernier recours avant capture)
     if (files.some(f => f.name === '__ia_thumb.jpg'))
         return { url: fileUrl(identifier, '__ia_thumb.jpg'), kind: 'item' };
-
     return { url: `https://archive.org/services/img/${encodeURIComponent(identifier)}`, kind: 'item' };
 }
 
@@ -633,8 +879,6 @@ function extraireIdentifier(url) {
 
 async function chargerToutesLesVideos() {
     const combined = [];
-
-    // --- source locale videos.json ---
     try {
         const res = await fetch('videos.json', { cache: 'no-cache' });
         if (res.ok) {
@@ -651,15 +895,13 @@ async function chargerToutesLesVideos() {
                 });
             });
         }
-    } catch { /* pas de videos.json, normal */ }
+    } catch {}
 
-    // --- source Archive.org ---
     try {
         const api = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(`uploader:"${CONFIG.ARCHIVE_USERNAME}" AND mediatype:(movies)`)}&fl[]=identifier&fl[]=title&fl[]=publicdate&sort[]=-publicdate&output=json&rows=${CONFIG.MAX_VIDEOS}`;
         const r = await fetch(api);
         const j = await r.json();
         const docs = j?.response?.docs || [];
-
         const results = await pool(docs, CONFIG.META_CONCURRENCY, async doc => {
             try {
                 const meta = await fetchMeta(doc.identifier);
@@ -681,11 +923,8 @@ async function chargerToutesLesVideos() {
             } catch { return null; }
         });
         results.filter(Boolean).forEach(v => combined.push(v));
-    } catch (e) {
-        console.warn('Archive.org indisponible :', e);
-    }
+    } catch (e) { console.warn('Archive.org indisponible :', e); }
 
-    // --- dédoublonnage ---
     const map = new Map();
     combined.forEach(v => { if (!map.has(v.video)) map.set(v.video, v); });
     state.allVideos = [...map.values()].sort((a, b) => {
@@ -707,11 +946,10 @@ async function chargerToutesLesVideos() {
 }
 
 /* ============================================================
-   CAPTURE DE VIGNETTE DEPUIS LA VIDÉO (fallback intelligent)
+   CAPTURE DE VIGNETTE
    ============================================================ */
 const thumbQueue = [];
 let thumbRunning = 0;
-
 function enqueueThumb(videoObj, imgEl, flagEl) {
     if (!state.autoThumb) return;
     if (navigator.connection?.saveData) return;
@@ -743,7 +981,6 @@ function pumpThumbQueue() {
         })();
     }
 }
-
 function captureFrame(url, knownDuration) {
     return new Promise(resolve => {
         const v = document.createElement('video');
@@ -752,7 +989,6 @@ function captureFrame(url, knownDuration) {
         v.muted = true;
         v.playsInline = true;
         let settled = false;
-
         const finish = val => {
             if (settled) return;
             settled = true;
@@ -761,7 +997,6 @@ function captureFrame(url, knownDuration) {
             resolve(val);
         };
         const timer = setTimeout(() => finish(null), 20000);
-
         v.addEventListener('error', () => finish(null));
         v.addEventListener('loadedmetadata', () => {
             const d = isFinite(v.duration) && v.duration > 0 ? v.duration : (knownDuration || 0);
@@ -776,7 +1011,6 @@ function captureFrame(url, knownDuration) {
                 c.width = w; c.height = h;
                 const ctx = c.getContext('2d');
                 ctx.drawImage(v, 0, 0, w, h);
-                // détecte les frames quasi uniformes (noir / blanc) → on réessaie plus loin
                 const sample = ctx.getImageData(0, 0, w, h).data;
                 let min = 255, max = 0;
                 for (let i = 0; i < sample.length; i += 4 * 97) {
@@ -789,14 +1023,14 @@ function captureFrame(url, knownDuration) {
                     return;
                 }
                 finish(c.toDataURL('image/jpeg', 0.72));
-            } catch { finish(null); } // canvas "tainted" si CORS refusé
+            } catch { finish(null); }
         });
         v.src = url;
     });
 }
 
 /* ============================================================
-   RENDU DE LA GRILLE
+   RENDU GRILLE
    ============================================================ */
 const lazyObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
@@ -807,10 +1041,7 @@ const lazyObserver = new IntersectionObserver(entries => {
         const v = state.allVideos[idx];
         if (!v) return;
         const flag = img.parentElement.querySelector('.thumb-flag');
-
-        if (img.dataset.pending === '1') {
-            img.src = v.vignette;
-        }
+        if (img.dataset.pending === '1') img.src = v.vignette;
         img.addEventListener('error', async () => {
             if (img.dataset.failed === '1') return;
             img.dataset.failed = '1';
@@ -819,8 +1050,6 @@ const lazyObserver = new IntersectionObserver(entries => {
             img.src = placeholderFor(v.titre);
             enqueueThumb(v, img, flag);
         }, { once: true });
-
-        // Vignette d'item générique → on tente une capture spécifique au fichier
         if (v.thumbKind === 'item' && state.autoThumb) {
             Cache.get('thumbs', v.video).then(cached => {
                 if (cached) { img.src = cached; v.vignette = cached; v.thumbKind = 'auto'; if (flag) flag.textContent = '🖼️ auto'; }
@@ -843,56 +1072,42 @@ function renderGrid() {
     state.visible = computeVisible();
     grid.innerHTML = '';
     $('libraryCount').textContent = `📁 Bibliothèque — ${state.visible.length} / ${state.allVideos.length}`;
-
-    if (!state.visible.length) {
-        grid.innerHTML = '<div class="empty-state">Aucun résultat.</div>';
-        return;
-    }
+    if (!state.visible.length) { grid.innerHTML = '<div class="empty-state">Aucun résultat.</div>'; return; }
 
     const frag = document.createDocumentFragment();
     state.visible.forEach(v => {
         const index = state.allVideos.indexOf(v);
         const pct = progressPercent(v.video);
         const isFav = state.favorites.includes(v.video);
-
         const item = document.createElement('div');
         item.className = 'video-item' + (index === state.currentIndex ? ' active' : '');
         item.dataset.index = index;
         item.tabIndex = 0;
-
         const wrap = document.createElement('div');
         wrap.className = 'thumb-wrap';
-
         const img = document.createElement('img');
-        img.loading = 'lazy';
-        img.decoding = 'async';
-        img.alt = v.titre;                       // textContent-safe : pas d'injection
+        img.loading = 'lazy'; img.decoding = 'async';
+        img.alt = v.titre;
         img.dataset.index = index;
-        img.src = placeholderFor(v.titre);        // placeholder unique immédiat
+        img.src = placeholderFor(v.titre);
         if (v.vignette) img.dataset.pending = '1';
-
         const flag = document.createElement('span');
         flag.className = 'thumb-flag';
         flag.textContent = v.thumbKind === 'file' ? '🖼️ fichier' : v.thumbKind === 'auto' ? '🖼️ auto' : '🖼️ item';
-
         const fav = document.createElement('button');
         fav.className = 'fav-btn' + (isFav ? ' is-fav' : '');
         fav.dataset.url = v.video;
         fav.textContent = isFav ? '❤️' : '🤍';
         fav.title = 'Favori';
         fav.addEventListener('click', e => toggleFavorite(v.video, e));
-
         const bar = document.createElement('div');
         bar.className = 'progress-bar';
         bar.style.width = pct + '%';
-
         wrap.append(img, flag, fav, bar);
-
         const title = document.createElement('div');
         title.className = 'title';
-        title.textContent = v.titre;              // échappé automatiquement
+        title.textContent = v.titre;
         title.title = v.titre;
-
         item.append(wrap, title);
         item.addEventListener('click', () => jouerVideo(index));
         item.addEventListener('keydown', e => { if (e.key === 'Enter') jouerVideo(index); });
@@ -904,7 +1119,6 @@ function renderGrid() {
             menu.style.left = Math.min(e.pageX, window.innerWidth - 210) + 'px';
             menu.style.top = e.pageY + 'px';
         });
-
         frag.appendChild(item);
         lazyObserver.observe(img);
     });
@@ -916,7 +1130,6 @@ function updateActiveStates() {
         el.classList.toggle('active', +el.dataset.index === state.currentIndex);
     });
 }
-
 function filtrer(type, btn) {
     state.filter = type;
     document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
@@ -924,7 +1137,6 @@ function filtrer(type, btn) {
     state.focusIndex = -1;
     renderGrid();
 }
-
 function genererContinueWatching() {
     const section = $('continueSection'), scroll = $('continueScroll');
     scroll.innerHTML = '';
@@ -932,7 +1144,6 @@ function genererContinueWatching() {
         .map(v => ({ v, p: getProgress(v.video) }))
         .filter(x => x.p && x.p.t > 10 && progressPercent(x.v.video) < 95)
         .slice(0, 15);
-
     items.forEach(({ v }) => {
         const pct = progressPercent(v.video);
         const div = document.createElement('div');
@@ -963,15 +1174,12 @@ function jouerVideo(index, options = {}) {
     state.currentIndex = index;
     state.ready = false;
     state.abLoop = { a: null, b: null, active: false };
-
     const v = state.allVideos[index];
     const resume = options.startTime ?? (getProgress(v.video)?.t || 0);
-
     $('mainTitle').textContent = v.titre;
     const amb = $('ambilightBg');
     if (v.vignette) { amb.style.backgroundImage = `url("${v.vignette}")`; amb.classList.add('active'); }
     video.poster = v.vignette || placeholderFor(v.titre);
-
     const badge = $('resumeBadge');
     if (resume > 5 && !options.startTime) {
         badge.style.display = 'inline-block';
@@ -979,17 +1187,16 @@ function jouerVideo(index, options = {}) {
         setTimeout(() => badge.style.display = 'none', 6000);
     } else badge.style.display = 'none';
 
-    // On attend les métadonnées AVANT de seek (l'ancien code seekait trop tôt)
     const onMeta = () => {
         if (resume > 5 && isFinite(video.duration) && resume < video.duration - 3) {
             try { video.currentTime = resume; } catch {}
         }
         video.playbackRate = state.speeds[state.speedIndex];
+        appliquerMixRadio();                    // 📻 vidéo en sourdine si radio active
         state.ready = true;
         if (!Cast.isCasting) video.play().catch(() => {});
     };
     video.addEventListener('loadedmetadata', onMeta, { once: true });
-
     video.src = v.video;
     video.load();
 
@@ -999,37 +1206,30 @@ function jouerVideo(index, options = {}) {
     displayNotes();
     sortirMiniPlayer(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
     if (Cast.isCasting) Cast.load(v.video, resume, true);
 }
 
 function setupVideoEvents() {
     let saveTimer = 0;
-
     video.addEventListener('timeupdate', () => {
         if (!state.ready || state.currentIndex < 0) return;
         const v = state.allVideos[state.currentIndex];
         if (!v) return;
-
-        // stats : temps réellement regardé
         const now = video.currentTime;
         if (state.lastTick !== null) {
             const delta = now - state.lastTick;
             if (delta > 0 && delta < 2 && !video.paused) state.watchedSeconds += delta;
         }
         state.lastTick = now;
-
         if (state.abLoop.active && state.abLoop.a !== null && state.abLoop.b !== null && now >= state.abLoop.b) {
             video.currentTime = state.abLoop.a;
         }
-
         if (++saveTimer % 20 === 0 && !video.ended) {
             setProgress(v.video, now, video.duration);
             const bar = document.querySelector(`.video-item[data-index="${state.currentIndex}"] .progress-bar`);
             if (bar && video.duration) bar.style.width = Math.min(100, (now / video.duration) * 100) + '%';
         }
     });
-
     video.addEventListener('pause', () => {
         if (state.currentIndex >= 0 && state.ready) {
             const v = state.allVideos[state.currentIndex];
@@ -1038,7 +1238,6 @@ function setupVideoEvents() {
         flushStats();
         releaseWakeLock();
     });
-
     video.addEventListener('ended', () => {
         const v = state.allVideos[state.currentIndex];
         if (v) localStorage.removeItem('progress_' + v.video);
@@ -1048,10 +1247,9 @@ function setupVideoEvents() {
         renderGrid();
         if (state.currentIndex < state.allVideos.length - 1) {
             showToast('⏭️ Vidéo suivante…');
-            setTimeout(() => jouerVideo(state.currentIndex + 1), 1200);
+            setTimeout(() => jouerVideo(state.currentIndex + 1), 1200);   // 📻 la radio continue pendant l'enchaînement
         }
     });
-
     video.addEventListener('play', requestWakeLock);
     video.addEventListener('error', () => {
         if (!video.src) return;
@@ -1077,6 +1275,7 @@ function restaurerSession() {
             $('resumeBadge').style.display = 'inline-block';
             $('resumeBadge').textContent = `▶ Reprendre (${formatTime(p.t)})`;
         }
+        appliquerMixRadio();
         state.ready = true;
     }, { once: true });
     updateActiveStates();
@@ -1091,7 +1290,6 @@ function jouerVideoAleatoire() {
     while (state.allVideos.length > 1 && i === state.currentIndex);
     jouerVideo(i);
 }
-
 function genererLienPartage() {
     if (state.currentIndex === -1) { showToast('⚠️ Lancez d\'abord une vidéo'); return; }
     const v = state.allVideos[state.currentIndex];
@@ -1099,7 +1297,6 @@ function genererLienPartage() {
     const link = `${location.origin}${location.pathname}?v=${encodeURIComponent(v.video)}&t=${t}`;
     navigator.clipboard?.writeText(link).then(() => showToast('🔗 Lien copié !')).catch(() => prompt('Lien :', link));
 }
-
 function chargerVideoDepuisURL() {
     const p = new URLSearchParams(location.search);
     const vUrl = p.get('v');
@@ -1108,7 +1305,6 @@ function chargerVideoDepuisURL() {
     const i = state.allVideos.findIndex(v => v.video === vUrl);
     if (i !== -1) jouerVideo(i, { startTime: t });
 }
-
 function toggleCinemaMode() {
     const p = $('mainPlayer');
     p.classList.toggle('cinema-mode');
@@ -1118,7 +1314,6 @@ function sortirMiniPlayer(silent) {
     $('mainPlayer').classList.remove('mini-player');
     if (!silent) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 const playerObserver = new IntersectionObserver(entries => {
     const p = $('mainPlayer');
     if (document.fullscreenElement || Cast.isCasting) { p.classList.remove('mini-player'); return; }
@@ -1127,14 +1322,12 @@ const playerObserver = new IntersectionObserver(entries => {
 }, { threshold: 0.1 });
 
 /* ============================================================
-   CASTING — AirPlay / Remote Playback / Chromecast
+   CASTING
    ============================================================ */
 const Cast = {
     isCasting: false,
     ctx: null,
     sdkLoading: false,
-    airplayAvailable: false,
-
     init() {
         if (!window.cast?.framework) return;
         this.ctx = cast.framework.CastContext.getInstance();
@@ -1160,7 +1353,6 @@ const Cast = {
             }
         });
     },
-
     load(url, time, autoplay) {
         const session = this.ctx?.getCurrentSession();
         if (!session) return;
@@ -1177,7 +1369,6 @@ const Cast = {
             showToast('📺 Diffusion sur le téléviseur');
         }).catch(err => showToast('❌ Erreur cast : ' + (err.code || err)));
     },
-
     loadSdk() {
         if (this.sdkLoading || window.cast?.framework) return;
         this.sdkLoading = true;
@@ -1189,37 +1380,19 @@ const Cast = {
         document.head.appendChild(s);
     }
 };
-
 window.__onGCastApiAvailable = isAvailable => {
     if (isAvailable) { Cast.init(); showToast('📺 Chromecast prêt'); }
 };
-
-// Détection AirPlay
-video.addEventListener('webkitplaybacktargetavailabilitychanged', e => {
-    Cast.airplayAvailable = (e.availability === 'available');
-});
-
 async function casterVideo() {
     if (state.currentIndex === -1 && !video.src) { showToast('⚠️ Lancez d\'abord une vidéo'); return; }
     const url = state.allVideos[state.currentIndex]?.video || video.src;
-
-    // 1. Session Cast déjà active → on envoie / on ouvre le contrôle
-    if (Cast.isCasting) {
-        Cast.load(url, video.currentTime, true);
-        return;
-    }
-
-    // 2. AirPlay (Safari macOS / iOS)
+    if (Cast.isCasting) { Cast.load(url, video.currentTime, true); return; }
     if (typeof video.webkitShowPlaybackTargetPicker === 'function') {
         try { video.webkitShowPlaybackTargetPicker(); return; } catch {}
     }
-
-    // 3. Remote Playback API (standard W3C)
     if (video.remote && typeof video.remote.prompt === 'function') {
         try { await video.remote.prompt(); return; } catch {}
     }
-
-    // 4. Chromecast
     if (location.protocol === 'file:') {
         showToast('⚠️ Chromecast nécessite http(s) — ouvrez via un serveur local', 5000);
         return;
@@ -1363,13 +1536,12 @@ window.addEventListener('beforeunload', flushStats);
    CLAVIER
    ============================================================ */
 document.addEventListener('keydown', e => {
-    const inInput = document.activeElement === $('searchInput');
+    const inInput = document.activeElement === $('searchInput') || document.activeElement === $('radioCustomUrl');
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('searchInput').focus(); return; }
-    if (inInput) { if (e.key === 'Escape') $('searchInput').blur(); return; }
+    if (inInput) { if (e.key === 'Escape') document.activeElement.blur(); return; }
     if (e.key === 'Escape') { closeSettings(); $('notesPanel').classList.remove('open'); $('contextMenu').style.display = 'none'; return; }
     if (e.ctrlKey || e.metaKey) return;
 
-    // Navigation dans la grille : Alt + flèches
     if (e.altKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
         const items = [...document.querySelectorAll('.video-item')];
@@ -1394,13 +1566,14 @@ document.addEventListener('keydown', e => {
         case 'KeyF': e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : video.requestFullscreen?.(); break;
         case 'KeyC': e.preventDefault(); toggleCinemaMode(); break;
         case 'KeyK': e.preventDefault(); casterVideo(); break;
+        case 'KeyP': e.preventDefault(); toggleRadio(); break;   // 📻 P = Play/Stop radio
         case 'KeyM': e.preventDefault(); video.muted = !video.muted; showToast(video.muted ? '🔇 Muet' : '🔊 Son'); break;
         case 'KeyN': e.preventDefault(); toggleNotesPanel(); break;
         case 'KeyR': e.preventDefault(); jouerVideoAleatoire(); break;
         case 'ArrowRight': e.preventDefault(); video.currentTime = Math.min(video.duration || 0, video.currentTime + 10); break;
         case 'ArrowLeft': e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 10); break;
-        case 'ArrowUp': e.preventDefault(); video.volume = Math.min(1, video.volume + 0.1); showToast(`🔊 ${Math.round(video.volume * 100)}%`, 900); break;
-        case 'ArrowDown': e.preventDefault(); video.volume = Math.max(0, video.volume - 0.1); showToast(`🔉 ${Math.round(video.volume * 100)}%`, 900); break;
+        case 'ArrowUp': e.preventDefault(); video.volume = Math.min(1, video.volume + 0.1); showToast(`🔊 Vidéo ${Math.round(video.volume * 100)}%`, 900); break;
+        case 'ArrowDown': e.preventDefault(); video.volume = Math.max(0, video.volume - 0.1); showToast(`🔉 Vidéo ${Math.round(video.volume * 100)}%`, 900); break;
         case 'KeyS':
             e.preventDefault();
             state.speedIndex = (state.speedIndex + 1) % state.speeds.length;
@@ -1432,6 +1605,7 @@ document.addEventListener('drop', e => {
         state.currentIndex = -1;
         state.ready = true;
         video.src = URL.createObjectURL(file);
+        appliquerMixRadio();
         video.play().catch(() => {});
         $('mainTitle').textContent = file.name;
         showToast(`📂 Lecture locale : ${file.name}`);
@@ -1444,6 +1618,7 @@ document.addEventListener('drop', e => {
    ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
     setupVideoEvents();
+    initRadio();
     afficherStats();
     chargerToutesLesVideos();
     setInterval(flushStats, 20000);
