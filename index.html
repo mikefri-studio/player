@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rainbow Cinema — Radio Edition</title>
+<title>Rainbow Cinema — Edition Complète</title>
 <meta name="theme-color" content="#e50914">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
 <style>
@@ -188,8 +188,8 @@ body{padding:10px}
 <div class="quick-actions">
     <button class="btn-action btn-primary" onclick="jouerVideoAleatoire()">🎲 Aléatoire</button>
     <button class="btn-action" onclick="genererLienPartage()">🔗 Partager</button>
-    <button class="btn-action" id="castBtn" onclick="casterVideo()" title="Diffuser sur un écran">📺 Caster</button>
-    <button class="btn-action" id="radioBtn" onclick="toggleRadioPanel()" title="Radio en fond sonore">📻 Radio</button>
+    <button class="btn-action" id="castBtn" onclick="casterVideo()" title="Diffuser sur un écran (K)">📺 Caster</button>
+    <button class="btn-action" id="radioBtn" onclick="toggleRadioPanel()" title="Radio en fond sonore (P)">📻 Radio</button>
     <button class="btn-action" onclick="showStats()">📊 Stats</button>
     <button class="btn-action" onclick="toggleABLoop('a')">🔵 A</button>
     <button class="btn-action" onclick="toggleABLoop('b')">🔴 B</button>
@@ -387,7 +387,7 @@ function placeholderFor(title) {
 }
 
 /* ============================================================
-   CACHE INDEXEDDB
+   CACHE INDEXEDDB (vignettes + métadonnées)
    ============================================================ */
 const Cache = (() => {
     let dbp = null;
@@ -449,7 +449,7 @@ const Cache = (() => {
 })();
 
 /* ============================================================
-   PROGRESSION
+   PROGRESSION (format {t,d} + rétrocompat ancien format)
    ============================================================ */
 function getProgress(url) {
     const raw = localStorage.getItem('progress_' + url);
@@ -509,7 +509,7 @@ function toggleAutoThumb(on) {
 }
 async function majInfoCache() {
     const n = await Cache.count('thumbs');
-    $('thumbCacheInfo').textContent = `Cache : ${n} vignette(s) en mémoire locale`;
+    $('thumbCacheInfo').textContent = `Cache : ${n} vignette(s) en mémoire locale (stockage persistant demandé)`;
 }
 async function viderCacheVignettes() {
     await Cache.clear('thumbs');
@@ -572,17 +572,12 @@ function resetAllData() {
    ============================================================ */
 const Radio = {
     stations: [
-        { nom: 'France Inter',     url: 'https://icecast.radiofrance.fr/franceinter-midfi.mp3',       genre: 'Généraliste' },
-        { nom: 'franceinfo',       url: 'https://icecast.radiofrance.fr/franceinfo-midfi.mp3',        genre: 'Info' },
-        { nom: 'FIP',              url: 'https://icecast.radiofrance.fr/fip-midfi.mp3',               genre: 'Éclectique' },
-        { nom: 'France Musique',   url: 'https://icecast.radiofrance.fr/francemusique-midfi.mp3',     genre: 'Classique' },
-        { nom: 'TSF Jazz',         url: 'https://tsfjazz.ice.infomaniak.ch/tsfjazz-high.mp3',         genre: 'Jazz' },
-        { nom: 'Radio Nova',       url: 'https://novazz.ice.infomaniak.ch/novazz-128.mp3',            genre: 'Musique' },
-        { nom: 'Radio Meuh',       url: 'https://radiomeuh.ice.infomaniak.ch/radiomeuh-128.mp3',      genre: 'Groove' },
-        { nom: 'Groove Salad',     url: 'https://ice1.somafm.com/groovesalad-128-mp3',                genre: 'Ambient' },
-        { nom: 'Drone Zone',       url: 'https://ice1.somafm.com/dronezone-128-mp3',                  genre: 'Ambient' },
-        { nom: 'Indie Pop Rocks',  url: 'https://ice1.somafm.com/indiepop-128-mp3',                   genre: 'Indie' },
-        { nom: 'Radio Paradise',   url: 'https://stream.radioparadise.com/mp3-192',                   genre: 'Éclectique' }
+        { nom: 'ibizasonica',     url: 'https://ibizasonica.streaming-pro.com:8000/ibizasonica',       genre: 'Généraliste' },
+        { nom: 'Ibiza Global',       url: 'http://ibizaglobalradio.streaming-pro.com:8024/',        genre: 'Info' },
+        { nom: 'Pure Ibiza',        url: 'http://control.streaming-pro.com:8024/stream.aac',               genre: 'Éclectique' },
+        { nom: 'ROCK FM Guns N rose',   url: 'http://streams.regenbogen.de/rr-gunsnroses-128-mp3',     genre: 'Classique' },
+        { nom: 'Guns N Roses',         url: 'https://stream02.pcradio.biz/guns_n_roses-hi',         genre: 'Jazz' }
+       
     ],
     custom: JSON.parse(localStorage.getItem('radioCustom') || '[]'),
     current: JSON.parse(localStorage.getItem('radioCurrent') || 'null'),
@@ -734,8 +729,8 @@ function removeCustomStation(i) {
 }
 
 function initRadio() {
-    const rv = localStorage.getItem('radioVolume');   if (rv) $('radioVolume').value = rv;
-    const mv = localStorage.getItem('videoMixVolume'); if (mv) $('videoMixVolume').value = mv;
+    const rv = localStorage.getItem('radioVolume');    if (rv) $('radioVolume').value = rv;
+    const mv = localStorage.getItem('videoMixVolume');  if (mv) $('videoMixVolume').value = mv;
     $('autoThumbSwitch').checked = state.autoThumb;
     if (Radio.current) $('radioNow').textContent = '⏸ ' + Radio.current.nom;
     renderStations();
@@ -827,7 +822,7 @@ function toggleFavorite(url, ev) {
 }
 
 /* ============================================================
-   MÉTADONNÉES ARCHIVE.ORG
+   MÉTADONNÉES ARCHIVE.ORG — vignette PAR FICHIER
    ============================================================ */
 function choisirFichierVideo(files) {
     const mp4 = files.filter(f => f.name && /\.mp4$/i.test(f.name));
@@ -946,7 +941,7 @@ async function chargerToutesLesVideos() {
 }
 
 /* ============================================================
-   CAPTURE DE VIGNETTE
+   CAPTURE DE VIGNETTE DEPUIS LA VIDÉO + REPLI ANTI-CORS
    ============================================================ */
 const thumbQueue = [];
 let thumbRunning = 0;
@@ -974,6 +969,10 @@ function pumpThumbQueue() {
                     job.videoObj.thumbKind = 'auto';
                     if (job.flagEl) job.flagEl.textContent = '🖼️ auto';
                     if (state.allVideos[state.currentIndex] === job.videoObj) video.poster = data;
+                } else if (!data && job.videoObj.identifier && job.imgEl.isConnected) {
+                    // 🛟 Repli anti-CORS : image d'item officielle Archive.org
+                    job.imgEl.src = `https://archive.org/services/img/${encodeURIComponent(job.videoObj.identifier)}`;
+                    if (job.flagEl) job.flagEl.textContent = '🖼️ item';
                 }
             } catch {}
             thumbRunning--;
@@ -981,6 +980,7 @@ function pumpThumbQueue() {
         })();
     }
 }
+
 function captureFrame(url, knownDuration) {
     return new Promise(resolve => {
         const v = document.createElement('video');
@@ -1011,6 +1011,7 @@ function captureFrame(url, knownDuration) {
                 c.width = w; c.height = h;
                 const ctx = c.getContext('2d');
                 ctx.drawImage(v, 0, 0, w, h);
+                // détection des frames quasi uniformes (fondu noir) → réessai plus loin
                 const sample = ctx.getImageData(0, 0, w, h).data;
                 let min = 255, max = 0;
                 for (let i = 0; i < sample.length; i += 4 * 97) {
@@ -1023,14 +1024,14 @@ function captureFrame(url, knownDuration) {
                     return;
                 }
                 finish(c.toDataURL('image/jpeg', 0.72));
-            } catch { finish(null); }
+            } catch { finish(null); } // canvas "tainted" si CORS refusé
         });
         v.src = url;
     });
 }
 
 /* ============================================================
-   RENDU GRILLE
+   RENDU DE LA GRILLE
    ============================================================ */
 const lazyObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
@@ -1322,7 +1323,7 @@ const playerObserver = new IntersectionObserver(entries => {
 }, { threshold: 0.1 });
 
 /* ============================================================
-   CASTING
+   CASTING — AirPlay / Remote Playback / Chromecast
    ============================================================ */
 const Cast = {
     isCasting: false,
@@ -1431,7 +1432,10 @@ async function regenThumb(v) {
     showToast('🖼️ Régénération en cours…');
     await Cache.set('thumbs', v.video, null);
     const data = await captureFrame(v.video, v.duration);
-    if (!data) { showToast('❌ Capture impossible (CORS ou fichier)'); return; }
+    if (!data) {
+        showToast('❌ Capture impossible (CORS ou fichier)');
+        return;
+    }
     await Cache.set('thumbs', v.video, data);
     v.vignette = data; v.thumbKind = 'auto';
     const img = document.querySelector(`.video-item[data-index="${state.allVideos.indexOf(v)}"] img`);
@@ -1566,7 +1570,7 @@ document.addEventListener('keydown', e => {
         case 'KeyF': e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : video.requestFullscreen?.(); break;
         case 'KeyC': e.preventDefault(); toggleCinemaMode(); break;
         case 'KeyK': e.preventDefault(); casterVideo(); break;
-        case 'KeyP': e.preventDefault(); toggleRadio(); break;   // 📻 P = Play/Stop radio
+        case 'KeyP': e.preventDefault(); toggleRadio(); break;   // 📻 Play/Stop radio
         case 'KeyM': e.preventDefault(); video.muted = !video.muted; showToast(video.muted ? '🔇 Muet' : '🔊 Son'); break;
         case 'KeyN': e.preventDefault(); toggleNotesPanel(); break;
         case 'KeyR': e.preventDefault(); jouerVideoAleatoire(); break;
@@ -1612,11 +1616,17 @@ document.addEventListener('drop', e => {
         break;
     }
 });
-
-/* ============================================================
+F
+/* =======================================================F=====
    INITIALISATION
    ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
+    // 🔒 Demande au navigateur de ne jamais évincer le cache (IndexedDB)
+    if (navigator.storage?.persist) {
+        navigator.storage.persist().then(ok =>
+            console.log('💾 Stockage persistant accordé :', ok)
+        );
+    }
     setupVideoEvents();
     initRadio();
     afficherStats();
