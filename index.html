@@ -310,8 +310,8 @@ body{padding:10px}
 const CONFIG = {
     ARCHIVE_USERNAME: "Mikeboy58",
     MAX_VIDEOS: 100,
-    META_CONCURRENCY: 6,
-    THUMB_CONCURRENCY: 2,
+    META_CONCURRENCY: 3,      // ⭐ Réduit de 6 à 3
+    THUMB_CONCURRENCY: 1,     // ⭐ Réduit de 2 à 1
     THUMB_SEEK_RATIO: 0.12,
     META_TTL: 1000 * 60 * 60 * 12
 };
@@ -332,7 +332,8 @@ const state = {
     wakeLock: null,
     autoThumb: localStorage.getItem('autoThumb') !== '0',
     watchedSeconds: 0,
-    lastTick: null
+    lastTick: null,
+    stableTried: false        // ⭐ Ajouté pour le repli automatique
 };
 
 const $ = id => document.getElementById(id);
@@ -389,6 +390,12 @@ function placeholderFor(title) {
 <text x="160" y="150" font-family="sans-serif" font-size="13" fill="#ffffff" text-anchor="middle" opacity=".35">aperçu indisponible</text>
 </svg>`;
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+// ⭐ NOUVELLE FONCTION : Convertit les URLs fragiles en URLs stables
+function versLienStable(url) {
+    const m = String(url).match(/\/(?:items|download)\/([^/?#]+)\/(.+)$/);
+    return m ? `https://archive.org/download/${m[1]}/${m[2]}` : null;
 }
 
 /* ============================================================
@@ -941,8 +948,13 @@ async function chargerToutesLesVideos() {
     renderGrid();
     genererContinueWatching();
     afficherStats();
-    restaurerSession();
-    chargerVideoDepuisURL();
+    
+    // ⭐ MODIFICATION : Éviter le double chargement au démarrage
+    if (new URLSearchParams(location.search).get('v')) {
+        chargerVideoDepuisURL();
+    } else {
+        restaurerSession();
+    }
 }
 
 /* ============================================================
@@ -956,10 +968,14 @@ function enqueueThumb(videoObj, imgEl, flagEl) {
     if (videoObj.thumbKind === 'custom' || videoObj.skipAutoThumb) return;
     if (!state.autoThumb) return;
     if (navigator.connection?.saveData) return;
+    // ⭐ MODIFICATION : ne pas capturer pendant qu'une vidéo charge
+    if (!state.ready) return;
     thumbQueue.push({ videoObj, imgEl, flagEl });
     pumpThumbQueue();
 }
 function pumpThumbQueue() {
+    // ⭐ MODIFICATION : ne pas capturer pendant qu'une vidéo charge
+    if (!state.ready) return;
     while (thumbRunning < CONFIG.THUMB_CONCURRENCY && thumbQueue.length) {
         const job = thumbQueue.shift();
         thumbRunning++;
@@ -1201,6 +1217,8 @@ function jouerVideo(index, options = {}) {
     state.currentIndex = index;
     state.ready = false;
     state.abLoop = { a: null, b: null, active: false };
+    state.stableTried = false;  // ⭐ Réinitialisé à chaque nouvelle vidéo
+    
     const v = state.allVideos[index];
     const resume = options.startTime ?? (getProgress(v.video)?.t || 0);
     $('mainTitle').textContent = v.titre;
@@ -1224,7 +1242,10 @@ function jouerVideo(index, options = {}) {
         if (!Cast.isCasting) video.play().catch(() => {});
     };
     video.addEventListener('loadedmetadata', onMeta, { once: true });
-    video.src = v.video;
+    
+    // ⭐ MODIFICATION : utiliser l'URL stable en priorité
+    const stableUrl = versLienStable(v.video) || v.video;
+    video.src = stableUrl;
     video.load();
 
     localStorage.setItem('lastVideoUrl', v.video);
@@ -1233,7 +1254,7 @@ function jouerVideo(index, options = {}) {
     displayNotes();
     sortirMiniPlayer(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (Cast.isCasting) Cast.load(v.video, resume, true);
+    if (Cast.isCasting) Cast.load(stableUrl, resume, true);
 }
 
 function setupVideoEvents() {
@@ -1278,9 +1299,34 @@ function setupVideoEvents() {
         }
     });
     video.addEventListener('play', requestWakeLock);
+    
+    // ⭐ MODIFICATION : handler d'erreur intelligent avec filtrage et repli automatique
     video.addEventListener('error', () => {
-        if (!video.src) return;
-        showToast('❌ Lecture impossible (fichier introuvable ou CORS)');
+        const err = video.error;
+        if (!err) return;
+        
+        // Filtrer MEDIA_ERR_ABORTED (faux positif lors de changement de src)
+        if (err.code === MediaError.MEDIA_ERR_ABORTED) return;
+        
+        // Repli automatique vers URL stable si SRC_NOT_SUPPORTED
+        const stable = versLienStable(video.src);
+        if (err.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED &&
+            stable && stable !== video.src && !state.stableTried) {
+            state.stableTried = true;
+            showToast('🔄 Nouvelle tentative via archive.org/download…');
+            video.src = stable;
+            video.load();
+            return;
+        }
+        
+        // Messages d'erreur détaillés
+        const msg = {
+            [MediaError.MEDIA_ERR_NETWORK]: 'réseau coupé ou flux limité par Archive.org (403)',
+            [MediaError.MEDIA_ERR_DECODE]: 'fichier corrompu / codec non supporté',
+            [MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED]: 'fichier introuvable (404) ou item en cours de traitement'
+        }[err.code] || 'erreur inconnue';
+        
+        showToast(`❌ Lecture impossible : ${msg}`, 5000);
     });
 }
 
@@ -1293,7 +1339,11 @@ function restaurerSession() {
     const v = state.allVideos[i];
     $('mainTitle').textContent = v.titre;
     video.poster = v.vignette || placeholderFor(v.titre);
-    video.src = v.video;
+    
+    // ⭐ MODIFICATION : utiliser l'URL stable
+    const stableUrl = versLienStable(v.video) || v.video;
+    video.src = stableUrl;
+    
     if (v.vignette) { $('ambilightBg').style.backgroundImage = `url("${v.vignette}")`; $('ambilightBg').classList.add('active'); }
     const p = getProgress(v.video);
     video.addEventListener('loadedmetadata', () => {
@@ -1383,7 +1433,8 @@ const Cast = {
     load(url, time, autoplay) {
         const session = this.ctx?.getCurrentSession();
         if (!session) return;
-        const info = new chrome.cast.media.MediaInfo(url, 'video/mp4');
+        const stableUrl = versLienStable(url) || url;  // ⭐ URL stable pour cast
+        const info = new chrome.cast.media.MediaInfo(stableUrl, 'video/mp4');
         info.metadata = new chrome.cast.media.GenericMediaMetadata();
         info.metadata.title = state.allVideos[state.currentIndex]?.titre || 'Rainbow Cinema';
         const artwork = state.allVideos[state.currentIndex]?.vignette;
