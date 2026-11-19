@@ -6,7 +6,7 @@
 <title>Rainbow Cinema — Edition Complète</title>
 <meta name="theme-color" content="#e50914">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
-    <link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="48x48" href="icons/icon-48.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -95,7 +95,6 @@ video{width:100%;height:auto;display:block;max-height:70vh;background:#000}
 .mixer-row>span{min-width:180px}
 .mixer-row input[type=range]{flex:1;min-width:130px;accent-color:var(--primary)}
 .mixer-row select{background:var(--bg-elev);color:var(--text-main);border:1px solid var(--border);border-radius:6px;padding:5px 8px}
-/* ---------------------------- */
 
 .video-list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;border-bottom:1px solid var(--border);padding-bottom:10px;gap:10px;flex-wrap:wrap}
 .filter-tabs{display:flex;gap:10px;flex-wrap:wrap}
@@ -583,7 +582,6 @@ const Radio = {
         { nom: 'Pure Ibiza',        url: 'http://control.streaming-pro.com:8024/stream.aac',               genre: 'Éclectique' },
         { nom: 'ROCK FM Guns N rose',   url: 'http://streams.regenbogen.de/rr-gunsnroses-128-mp3',     genre: 'Classique' },
         { nom: 'Guns N Roses',         url: 'https://stream02.pcradio.biz/guns_n_roses-hi',         genre: 'Jazz' }
-       
     ],
     custom: JSON.parse(localStorage.getItem('radioCustom') || '[]'),
     current: JSON.parse(localStorage.getItem('radioCurrent') || 'null'),
@@ -666,17 +664,15 @@ function stopRadio(silent) {
 
 function toggleRadio() { Radio.on ? stopRadio() : startRadio(); }
 
-/* Coupe le son de la vidéo pendant que la radio joue */
 function activerModeRadio() {
     Radio.prevVideoVolume = video.volume;
-    video.volume = $('videoMixVolume').value / 100;   // 0 par défaut = vidéo muette
+    video.volume = $('videoMixVolume').value / 100;
     localStorage.setItem('radioMode', '1');
 }
 function desactiverModeRadio() {
     video.volume = Radio.prevVideoVolume || 1;
     localStorage.setItem('radioMode', '0');
 }
-/* Réapplique le mix quand une nouvelle vidéo démarre */
 function appliquerMixRadio() {
     if (localStorage.getItem('radioMode') === '1') {
         video.volume = ($('videoMixVolume').value || 0) / 100;
@@ -886,11 +882,14 @@ async function chargerToutesLesVideos() {
             const list = await res.json();
             (Array.isArray(list) ? list : []).forEach(v => {
                 if (!v.video) return;
+                // ⭐ MODIFICATION : support des clés "vignette" ET "image" depuis le JSON
+                const customThumb = v.vignette || v.image || null;
                 combined.push({
                     titre: v.titre || v.video.split('/').pop(),
                     video: v.video,
-                    vignette: v.vignette || null,
-                    thumbKind: v.vignette ? 'custom' : 'none',
+                    vignette: customThumb,
+                    thumbKind: customThumb ? 'custom' : 'none',
+                    skipAutoThumb: !!customThumb,
                     identifier: extraireIdentifier(v.video),
                     source: 'json'
                 });
@@ -951,7 +950,10 @@ async function chargerToutesLesVideos() {
    ============================================================ */
 const thumbQueue = [];
 let thumbRunning = 0;
+
+// ⭐ MODIFICATION : ne pas traiter les vidéos avec jaquette personnalisée (custom)
 function enqueueThumb(videoObj, imgEl, flagEl) {
+    if (videoObj.thumbKind === 'custom' || videoObj.skipAutoThumb) return;
     if (!state.autoThumb) return;
     if (navigator.connection?.saveData) return;
     thumbQueue.push({ videoObj, imgEl, flagEl });
@@ -976,7 +978,6 @@ function pumpThumbQueue() {
                     if (job.flagEl) job.flagEl.textContent = '🖼️ auto';
                     if (state.allVideos[state.currentIndex] === job.videoObj) video.poster = data;
                 } else if (!data && job.videoObj.identifier && job.imgEl.isConnected) {
-                    // 🛟 Repli anti-CORS : image d'item officielle Archive.org
                     job.imgEl.src = `https://archive.org/services/img/${encodeURIComponent(job.videoObj.identifier)}`;
                     if (job.flagEl) job.flagEl.textContent = '🖼️ item';
                 }
@@ -1017,7 +1018,6 @@ function captureFrame(url, knownDuration) {
                 c.width = w; c.height = h;
                 const ctx = c.getContext('2d');
                 ctx.drawImage(v, 0, 0, w, h);
-                // détection des frames quasi uniformes (fondu noir) → réessai plus loin
                 const sample = ctx.getImageData(0, 0, w, h).data;
                 let min = 255, max = 0;
                 for (let i = 0; i < sample.length; i += 4 * 97) {
@@ -1030,7 +1030,7 @@ function captureFrame(url, knownDuration) {
                     return;
                 }
                 finish(c.toDataURL('image/jpeg', 0.72));
-            } catch { finish(null); } // canvas "tainted" si CORS refusé
+            } catch { finish(null); }
         });
         v.src = url;
     });
@@ -1048,6 +1048,19 @@ const lazyObserver = new IntersectionObserver(entries => {
         const v = state.allVideos[idx];
         if (!v) return;
         const flag = img.parentElement.querySelector('.thumb-flag');
+
+        // ⭐ MODIFICATION : Si la vidéo a déjà une vignette custom depuis le JSON, on l'affiche directement
+        if (v.thumbKind === 'custom' && v.vignette) {
+            img.src = v.vignette;
+            img.addEventListener('error', () => {
+                if (img.dataset.failed === '1') return;
+                img.dataset.failed = '1';
+                // Fallback vers placeholder si la jaquette custom ne charge pas
+                img.src = placeholderFor(v.titre);
+            }, { once: true });
+            return;
+        }
+
         if (img.dataset.pending === '1') img.src = v.vignette;
         img.addEventListener('error', async () => {
             if (img.dataset.failed === '1') return;
@@ -1098,9 +1111,16 @@ function renderGrid() {
         img.dataset.index = index;
         img.src = placeholderFor(v.titre);
         if (v.vignette) img.dataset.pending = '1';
+
+        // ⭐ MODIFICATION : libellé du flag selon la source de la vignette
         const flag = document.createElement('span');
         flag.className = 'thumb-flag';
-        flag.textContent = v.thumbKind === 'file' ? '🖼️ fichier' : v.thumbKind === 'auto' ? '🖼️ auto' : '🖼️ item';
+        let flagText = '🖼️ item';
+        if (v.thumbKind === 'custom') flagText = '🎨 custom';
+        else if (v.thumbKind === 'file') flagText = '🖼️ fichier';
+        else if (v.thumbKind === 'auto') flagText = '🖼️ auto';
+        flag.textContent = flagText;
+
         const fav = document.createElement('button');
         fav.className = 'fav-btn' + (isFav ? ' is-fav' : '');
         fav.dataset.url = v.video;
@@ -1199,7 +1219,7 @@ function jouerVideo(index, options = {}) {
             try { video.currentTime = resume; } catch {}
         }
         video.playbackRate = state.speeds[state.speedIndex];
-        appliquerMixRadio();                    // 📻 vidéo en sourdine si radio active
+        appliquerMixRadio();
         state.ready = true;
         if (!Cast.isCasting) video.play().catch(() => {});
     };
@@ -1254,7 +1274,7 @@ function setupVideoEvents() {
         renderGrid();
         if (state.currentIndex < state.allVideos.length - 1) {
             showToast('⏭️ Vidéo suivante…');
-            setTimeout(() => jouerVideo(state.currentIndex + 1), 1200);   // 📻 la radio continue pendant l'enchaînement
+            setTimeout(() => jouerVideo(state.currentIndex + 1), 1200);
         }
     });
     video.addEventListener('play', requestWakeLock);
@@ -1435,6 +1455,11 @@ function contextAction(action) {
     else if (action === 'thumb') regenThumb(v);
 }
 async function regenThumb(v) {
+    // ⭐ MODIFICATION : ne pas permettre de régénérer une vignette custom définie dans le JSON
+    if (v.thumbKind === 'custom') {
+        showToast('🎨 Vignette personnalisée depuis le JSON (non régénérable)');
+        return;
+    }
     showToast('🖼️ Régénération en cours…');
     await Cache.set('thumbs', v.video, null);
     const data = await captureFrame(v.video, v.duration);
@@ -1576,7 +1601,7 @@ document.addEventListener('keydown', e => {
         case 'KeyF': e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : video.requestFullscreen?.(); break;
         case 'KeyC': e.preventDefault(); toggleCinemaMode(); break;
         case 'KeyK': e.preventDefault(); casterVideo(); break;
-        case 'KeyP': e.preventDefault(); toggleRadio(); break;   // 📻 Play/Stop radio
+        case 'KeyP': e.preventDefault(); toggleRadio(); break;
         case 'KeyM': e.preventDefault(); video.muted = !video.muted; showToast(video.muted ? '🔇 Muet' : '🔊 Son'); break;
         case 'KeyN': e.preventDefault(); toggleNotesPanel(); break;
         case 'KeyR': e.preventDefault(); jouerVideoAleatoire(); break;
@@ -1623,11 +1648,10 @@ document.addEventListener('drop', e => {
     }
 });
 
-/* =======================================================F=====
+/* ============================================================
    INITIALISATION
    ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
-    // 🔒 Demande au navigateur de ne jamais évincer le cache (IndexedDB)
     if (navigator.storage?.persist) {
         navigator.storage.persist().then(ok =>
             console.log('💾 Stockage persistant accordé :', ok)
@@ -1643,7 +1667,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(genererContinueWatching, 60000);
 });
 </script>
-    <script>
+<script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
 }
