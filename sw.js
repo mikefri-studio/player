@@ -1,4 +1,4 @@
-const CACHE = 'rainbow-cinema-v2';
+const CACHE = 'rainbow-cinema-v3';
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'])));
   self.skipWaiting();
