@@ -59,19 +59,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .main-player.mini-player .mini-expand{display:block}
 video{width:100%;height:auto;display:block;max-height:70vh;background:#000}
 
-/* ⭐ Indicateur de chargement compact : barre fine + pastille coin */
+/* ⭐ Indicateur de chargement compact */
 .load-bar{position:absolute;top:0;left:0;width:100%;height:3px;z-index:60;display:none;overflow:hidden;pointer-events:none}
 .load-bar.active{display:block}
 .load-bar::after{content:'';position:absolute;top:0;left:-45%;width:45%;height:100%;background:var(--primary);box-shadow:0 0 8px var(--primary-glow);animation:loadSlide 1.1s ease-in-out infinite}
 .load-pill{position:absolute;top:8px;left:8px;z-index:61;display:none;align-items:center;gap:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(4px);cursor:pointer;user-select:none}
 .load-pill.active{display:flex}
 .load-pill.err{color:#ffb14a;border-color:rgba(255,177,74,.5)}
+.load-pill.cached{color:#51cf66;border-color:rgba(81,207,102,.5)}
 .load-pill .spin{width:10px;height:10px;border:2px solid rgba(255,255,255,.35);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
 .load-pill.err .spin{display:none}
+.load-pill.cached .spin{display:none}
 .load-tip{position:absolute;top:36px;left:8px;z-index:61;display:none;background:rgba(0,0,0,.85);color:#eee;font-size:11px;line-height:1.5;padding:8px 10px;border-radius:8px;max-width:250px;border:1px solid rgba(255,255,255,.12);pointer-events:none}
 .load-tip.active{display:block}
-/* Pour masquer totalement l'indicateur, décommentez la ligne ci-dessous : */
-/* .load-bar,.load-pill,.load-tip{display:none!important} */
+
+/* ⭐ Indicateur de préchargement */
+.preload-indicator{position:absolute;bottom:8px;right:8px;z-index:61;display:none;align-items:center;gap:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(4px);pointer-events:none}
+.preload-indicator.active{display:flex}
+.preload-indicator .dot{width:6px;height:6px;background:#51cf66;border-radius:50%;animation:blink 1.5s infinite}
 
 .video-info{padding:15px 20px;background:var(--bg-card);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
 .video-info h2{font-size:1.3rem;font-weight:600;flex:1;min-width:200px}
@@ -200,12 +205,14 @@ body{padding:10px}
 <div class="main-player" id="mainPlayer">
     <button class="mini-expand" onclick="sortirMiniPlayer()" title="Revenir au lecteur">⤢</button>
 
-    <!-- ⭐ Indicateur compact : barre fine + pastille (cliquer la pastille = détails) -->
     <div class="load-bar" id="loadBar"></div>
     <div class="load-pill" id="loadPill" onclick="document.getElementById('loadTip').classList.toggle('active')">
         <span class="spin"></span><span id="loadPillText">chargement…</span>
     </div>
     <div class="load-tip" id="loadTip"></div>
+    <div class="preload-indicator" id="preloadIndicator">
+        <span class="dot"></span><span>Préchargement...</span>
+    </div>
 
     <video id="mainVideo" controls playsinline x-webkit-airplay="allow" preload="metadata"></video>
     <div class="video-info">
@@ -227,7 +234,6 @@ body{padding:10px}
     <div class="stats-display" id="statsDisplay">📊 Calcul des stats...</div>
 </div>
 
-<!-- ============ PANNEAU RADIO ============ -->
 <div class="radio-panel" id="radioPanel">
     <div class="radio-top">
         <button class="radio-power" id="radioPower" onclick="toggleRadio()">▶ Écouter</button>
@@ -260,7 +266,6 @@ body{padding:10px}
     </div>
 </div>
 <audio id="radioPlayer" preload="none"></audio>
-<!-- ======================================== -->
 
 <div class="video-list-header">
     <span id="libraryCount">📁 Bibliothèque</span>
@@ -307,6 +312,12 @@ body{padding:10px}
             <button class="modal-btn secondary" onclick="viderCacheVignettes()">🗑️ Vider le cache des vignettes</button>
         </div>
         <div class="modal-section">
+            <label>💾 Cache vidéo</label>
+            <div style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px" id="videoCacheInfo">Vérification du cache...</div>
+            <button class="modal-btn secondary" onclick="afficherStatsCache()">📊 Statistiques du cache</button>
+            <button class="modal-btn secondary" onclick="viderCacheVideos()">🗑️ Vider le cache vidéo</button>
+        </div>
+        <div class="modal-section">
             <label>💾 Sauvegardes</label>
             <button class="modal-btn" onclick="exportData()">📤 Exporter</button>
             <button class="modal-btn secondary" onclick="document.getElementById('importFile').click()">📥 Importer</button>
@@ -344,7 +355,12 @@ const CONFIG = {
     PROXY_URLS: [
         'https://corsproxy.io/?',
         'https://api.allorigins.win/raw?url='
-    ]
+    ],
+    // ⭐ Configuration du cache vidéo
+    CACHE_NAME: 'rainbow-videos-v1',
+    CACHE_MAX_SIZE_MB: 2000, // 2 GB max
+    PRELOAD_AHEAD: 2, // Précharger les 2 vidéos suivantes
+    PRELOAD_TRIGGER_PERCENT: 80 // Déclencher à 80% de la vidéo actuelle
 };
 
 const state = {
@@ -364,11 +380,160 @@ const state = {
     autoThumb: localStorage.getItem('autoThumb') !== '0',
     watchedSeconds: 0,
     lastTick: null,
-    retryCount: 0
+    retryCount: 0,
+    // ⭐ État du cache
+    preloading: false,
+    videoCache: null
 };
 
 const $ = id => document.getElementById(id);
 const video = $('mainVideo');
+
+/* ============================================================
+   ⭐ SYSTÈME DE CACHE VIDÉO (Cache Storage API)
+   ============================================================ */
+const VideoCache = (() => {
+    let cachePromise = null;
+
+    async function getCache() {
+        if (!cachePromise) {
+            cachePromise = caches.open(CONFIG.CACHE_NAME);
+        }
+        return cachePromise;
+    }
+
+    async function isCached(url) {
+        try {
+            const cache = await getCache();
+            const response = await cache.match(url);
+            return !!response;
+        } catch {
+            return false;
+        }
+    }
+
+    async function getFromCache(url) {
+        try {
+            const cache = await getCache();
+            return await cache.match(url);
+        } catch {
+            return null;
+        }
+    }
+
+    async function addToCache(url, response) {
+        try {
+            const cache = await getCache();
+            await cache.put(url, response.clone());
+            console.log('[Cache] Vidéo mise en cache:', url);
+            majStatsCache();
+        } catch (e) {
+            console.warn('[Cache] Erreur mise en cache:', e);
+        }
+    }
+
+    async function removeFromCache(url) {
+        try {
+            const cache = await getCache();
+            await cache.delete(url);
+            console.log('[Cache] Vidéo retirée du cache:', url);
+        } catch {}
+    }
+
+    async function getStats() {
+        try {
+            const cache = await getCache();
+            const keys = await cache.keys();
+            let totalSize = 0;
+            const videos = [];
+            
+            for (const request of keys) {
+                const response = await cache.match(request);
+                if (response && response.headers.get('content-type')?.startsWith('video/')) {
+                    const blob = await response.clone().blob();
+                    totalSize += blob.size;
+                    videos.push({
+                        url: request.url,
+                        size: blob.size,
+                        sizeMB: (blob.size / 1024 / 1024).toFixed(2)
+                    });
+                }
+            }
+            
+            return {
+                count: videos.length,
+                totalSize,
+                totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
+                maxSizeMB: CONFIG.CACHE_MAX_SIZE_MB,
+                videos: videos.slice(0, 10) // Top 10
+            };
+        } catch (e) {
+            console.error('[Cache] Erreur stats:', e);
+            return { count: 0, totalSize: 0, totalSizeMB: 0, maxSizeMB: CONFIG.CACHE_MAX_SIZE_MB, videos: [] };
+        }
+    }
+
+    async function cleanup() {
+        try {
+            const stats = await getStats();
+            if (stats.totalSize < CONFIG.CACHE_MAX_SIZE_MB * 1024 * 1024) return;
+            
+            console.log('[Cache] Nettoyage nécessaire, taille actuelle:', stats.totalSizeMB, 'MB');
+            const cache = await getCache();
+            const keys = await cache.keys();
+            
+            // Supprimer les vidéos les plus anciennes (FIFO)
+            for (let i = 0; i < Math.floor(keys.length * 0.2); i++) {
+                await cache.delete(keys[i]);
+            }
+            
+            console.log('[Cache] Nettoyage terminé');
+            majStatsCache();
+        } catch (e) {
+            console.error('[Cache] Erreur nettoyage:', e);
+        }
+    }
+
+    async function clearAll() {
+        try {
+            await caches.delete(CONFIG.CACHE_NAME);
+            cachePromise = null;
+            console.log('[Cache] Cache vidé');
+            majStatsCache();
+        } catch (e) {
+            console.error('[Cache] Erreur vidage:', e);
+        }
+    }
+
+    return { isCached, getFromCache, addToCache, removeFromCache, getStats, cleanup, clearAll };
+})();
+
+async function majStatsCache() {
+    const stats = await VideoCache.getStats();
+    const info = $('videoCacheInfo');
+    if (info) {
+        info.textContent = `Cache : ${stats.count} vidéo(s), ${stats.totalSizeMB} MB / ${stats.maxSizeMB} MB`;
+    }
+}
+
+function afficherStatsCache() {
+    VideoCache.getStats().then(stats => {
+        const msg = `📊 Statistiques du cache vidéo\n\n` +
+            `🎬 ${stats.count} vidéo(s) en cache\n` +
+            `💾 ${stats.totalSizeMB} MB utilisés\n` +
+            `📦 Limite : ${stats.maxSizeMB} MB\n\n` +
+            `Vidéos les plus récentes :\n` +
+            stats.videos.map((v, i) => `${i + 1}. ${v.url.split('/').pop()} (${v.sizeMB} MB)`).join('\n');
+        alert(msg);
+    });
+}
+
+async function viderCacheVideos() {
+    if (!confirm('⚠️ Vider TOUT le cache vidéo ?\n\nLes vidéos devront être retéléchargées.')) return;
+    await VideoCache.clearAll();
+    showToast('🗑️ Cache vidéo vidé');
+    majStatsCache();
+}
 
 /* ============================================================
    UTILITAIRES
@@ -436,7 +601,7 @@ function afficherChargement(texte, detail = '', retry = '') {
     if (!pill) return;
     bar.classList.add('active');
     pill.classList.add('active');
-    pill.classList.remove('err');
+    pill.classList.remove('err', 'cached');
     const m = String(retry).match(/(\d+)\s*\/\s*(\d+)/);
     $('loadPillText').textContent = m ? `essai ${m[1]}/${m[2]}` : 'chargement…';
     tip.innerHTML = `<b>${escapeHtml(texte)}</b>` +
@@ -444,23 +609,37 @@ function afficherChargement(texte, detail = '', retry = '') {
         (retry ? `<br>${escapeHtml(retry)}` : '');
     pill.title = texte + (detail ? ' — ' + detail : '');
 }
+
+function afficherCache() {
+    const pill = $('loadPill'), bar = $('loadBar'), tip = $('loadTip');
+    if (!pill) return;
+    bar.classList.remove('active');
+    pill.classList.add('active', 'cached');
+    pill.classList.remove('err');
+    $('loadPillText').textContent = 'cache ✓';
+    tip.innerHTML = `<b>Chargé depuis le cache local</b>`;
+    setTimeout(masquerChargement, 2000);
+}
+
 function masquerChargement() {
     $('loadBar')?.classList.remove('active');
-    $('loadPill')?.classList.remove('active', 'err');
+    $('loadPill')?.classList.remove('active', 'err', 'cached');
     $('loadTip')?.classList.remove('active');
 }
+
 function chargementErreur(msg) {
     const pill = $('loadPill');
     if (!pill) return;
     $('loadBar').classList.remove('active');
     pill.classList.add('active', 'err');
+    pill.classList.remove('cached');
     $('loadPillText').textContent = 'erreur';
     $('loadTip').innerHTML = `<b>❌ ${escapeHtml(msg)}</b>`;
     setTimeout(masquerChargement, 4000);
 }
 
 /* ============================================================
-   ⭐ SYSTÈME DE FIABILISATION (retry + fallback)
+   ⭐ SYSTÈME DE FIABILISATION (retry + fallback + cache)
    ============================================================ */
 async function testerURL(url, timeout = 5000) {
     try {
@@ -494,7 +673,7 @@ function genererURLsFallback(urlBase) {
     return urls.sort((a, b) => a.priority - b.priority);
 }
 
-async function chargerVideoAvecRetry(urls, index = 0) {
+async function chargerVideoAvecRetry(urls, index = 0, shouldCache = true) {
     if (index >= urls.length) {
         chargementErreur('Vidéo injoignable (serveur Archive.org indisponible ou CORS)');
         return false;
@@ -515,13 +694,22 @@ async function chargerVideoAvecRetry(urls, index = 0) {
 
     console.log(`[Rainbow] Tentative ${attempt} avec ${type}: ${url}`);
 
+    // ⭐ Vérifier le cache en premier
+    if (await VideoCache.isCached(url)) {
+        console.log('[Cache] Vidéo trouvée en cache');
+        afficherCache();
+        video.src = url;
+        video.load();
+        return true;
+    }
+
     try {
         const accessible = await testerURL(url, 3000);
 
         if (!accessible && type === 'direct') {
             console.log(`[Rainbow] URL ${type} non accessible, méthode suivante`);
             state.retryCount = 0;
-            return chargerVideoAvecRetry(urls, index + 1);
+            return chargerVideoAvecRetry(urls, index + 1, shouldCache);
         }
 
         return new Promise((resolve) => {
@@ -533,11 +721,22 @@ async function chargerVideoAvecRetry(urls, index = 0) {
                 );
             };
 
-            const onLoadedMetadata = () => {
-                masquerChargement();
+            const onLoadedMetadata = async () => {
                 video.removeEventListener('loadstart', onLoadStart);
                 video.removeEventListener('loadedmetadata', onLoadedMetadata);
                 video.removeEventListener('error', onError);
+                
+                // ⭐ Mettre en cache après chargement réussi
+                if (shouldCache) {
+                    try {
+                        const response = await fetch(url, { mode: 'no-cors' });
+                        await VideoCache.addToCache(url, response);
+                    } catch (e) {
+                        console.warn('[Cache] Impossible de mettre en cache:', e);
+                    }
+                }
+                
+                masquerChargement();
                 resolve(true);
             };
 
@@ -574,11 +773,11 @@ async function chargerVideoAvecRetry(urls, index = 0) {
                     );
 
                     setTimeout(() => {
-                        chargerVideoAvecRetry(urls, index).then(resolve);
+                        chargerVideoAvecRetry(urls, index, shouldCache).then(resolve);
                     }, delay);
                 } else {
                     state.retryCount = 0;
-                    chargerVideoAvecRetry(urls, index + 1).then(resolve);
+                    chargerVideoAvecRetry(urls, index + 1, shouldCache).then(resolve);
                 }
             };
 
@@ -593,7 +792,48 @@ async function chargerVideoAvecRetry(urls, index = 0) {
     } catch (e) {
         console.error(`[Rainbow] Exception avec ${type}:`, e);
         state.retryCount = 0;
-        return chargerVideoAvecRetry(urls, index + 1);
+        return chargerVideoAvecRetry(urls, index + 1, shouldCache);
+    }
+}
+
+/* ============================================================
+   ⭐ PRÉCHARGEMENT INTELLIGENT
+   ============================================================ */
+async function prechargerVideosSuivantes() {
+    if (state.preloading || !state.ready || state.currentIndex < 0) return;
+    
+    state.preloading = true;
+    $('preloadIndicator').classList.add('active');
+    
+    try {
+        for (let i = 1; i <= CONFIG.PRELOAD_AHEAD; i++) {
+            const nextIndex = state.currentIndex + i;
+            if (nextIndex >= state.allVideos.length) break;
+            
+            const nextVideo = state.allVideos[nextIndex];
+            const urls = genererURLsFallback(nextVideo.video);
+            const firstUrl = urls[0]?.url;
+            
+            if (!firstUrl) continue;
+            
+            // Vérifier si déjà en cache
+            if (await VideoCache.isCached(firstUrl)) {
+                console.log(`[Preload] Vidéo ${nextIndex} déjà en cache`);
+                continue;
+            }
+            
+            // Précharger
+            console.log(`[Preload] Préchargement vidéo ${nextIndex}: ${nextVideo.titre}`);
+            try {
+                const response = await fetch(firstUrl, { mode: 'no-cors' });
+                await VideoCache.addToCache(firstUrl, response);
+            } catch (e) {
+                console.warn(`[Preload] Échec préchargement ${nextIndex}:`, e);
+            }
+        }
+    } finally {
+        state.preloading = false;
+        $('preloadIndicator').classList.remove('active');
     }
 }
 
@@ -709,7 +949,11 @@ function changeColor(color, el) {
 /* ============================================================
    PARAMÈTRES / SAUVEGARDES
    ============================================================ */
-function openSettings() { $('settingsModal').classList.add('active'); majInfoCache(); }
+function openSettings() { 
+    $('settingsModal').classList.add('active'); 
+    majInfoCache(); 
+    majStatsCache(); 
+}
 function closeSettings() { $('settingsModal').classList.remove('active'); }
 $('settingsModal').addEventListener('click', e => { if (e.target.id === 'settingsModal') closeSettings(); });
 
@@ -771,9 +1015,10 @@ function importData(e) {
     e.target.value = '';
 }
 function resetAllData() {
-    if (!confirm('⚠️ Effacer TOUTES les données (favoris, progression, notes, stats, radio) ?')) return;
+    if (!confirm('⚠️ Effacer TOUTES les données (favoris, progression, notes, stats, radio, cache vidéo) ?')) return;
     localStorage.clear();
     Cache.clear('thumbs'); Cache.clear('meta');
+    VideoCache.clearAll();
     showToast('🗑️ Données effacées');
     setTimeout(() => location.reload(), 600);
 }
@@ -1146,6 +1391,7 @@ async function chargerToutesLesVideos() {
     renderGrid();
     genererContinueWatching();
     afficherStats();
+    majStatsCache();
 
     if (new URLSearchParams(location.search).get('v')) {
         chargerVideoDepuisURL();
@@ -1440,7 +1686,7 @@ function jouerVideo(index, options = {}) {
     video.addEventListener('play', onPlay, { once: true });
 
     const urls = genererURLsFallback(v.video);
-    chargerVideoAvecRetry(urls).then(success => {
+    chargerVideoAvecRetry(urls, 0, true).then(success => {
         if (!success && !state.ready) {
             $('mainTitle').textContent = '❌ Impossible de charger la vidéo';
         }
@@ -1457,6 +1703,8 @@ function jouerVideo(index, options = {}) {
 
 function setupVideoEvents() {
     let saveTimer = 0;
+    let preloadTriggered = false;
+    
     video.addEventListener('timeupdate', () => {
         if (!state.ready || state.currentIndex < 0) return;
         const v = state.allVideos[state.currentIndex];
@@ -1475,7 +1723,19 @@ function setupVideoEvents() {
             const bar = document.querySelector(`.video-item[data-index="${state.currentIndex}"] .progress-bar`);
             if (bar && video.duration) bar.style.width = Math.min(100, (now / video.duration) * 100) + '%';
         }
+        
+        // ⭐ Déclencher le préchargement à 80% de la vidéo
+        const progressPercent = video.duration ? (now / video.duration) * 100 : 0;
+        if (progressPercent >= CONFIG.PRELOAD_TRIGGER_PERCENT && !preloadTriggered) {
+            preloadTriggered = true;
+            prechargerVideosSuivantes();
+        }
     });
+    
+    video.addEventListener('loadedmetadata', () => {
+        preloadTriggered = false;
+    });
+    
     video.addEventListener('pause', () => {
         if (state.currentIndex >= 0 && state.ready) {
             const v = state.allVideos[state.currentIndex];
@@ -1491,6 +1751,10 @@ function setupVideoEvents() {
         compterVideoVue();
         genererContinueWatching();
         renderGrid();
+        
+        // ⭐ Nettoyage du cache si nécessaire
+        VideoCache.cleanup();
+        
         if (state.currentIndex < state.allVideos.length - 1) {
             showToast('⏭️ Vidéo suivante…');
             setTimeout(() => jouerVideo(state.currentIndex + 1), 1200);
@@ -1532,7 +1796,7 @@ function restaurerSession() {
     video.addEventListener('loadedmetadata', onMeta, { once: true });
 
     const urls = genererURLsFallback(v.video);
-    chargerVideoAvecRetry(urls);
+    chargerVideoAvecRetry(urls, 0, false); // Ne pas mettre en cache pour les sessions restaurées
 
     updateActiveStates();
     updateMediaSession();
@@ -1628,279 +1892,4 @@ const Cast = {
     },
     loadSdk() {
         if (this.sdkLoading || window.cast?.framework) return;
-        this.sdkLoading = true;
-        showToast('⏳ Chargement du module Chromecast…');
-        const s = document.createElement('script');
-        s.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
-        s.async = true;
-        s.onerror = () => { this.sdkLoading = false; showToast('❌ Module Cast indisponible'); };
-        document.head.appendChild(s);
-    }
-};
-window.__onGCastApiAvailable = isAvailable => {
-    if (isAvailable) { Cast.init(); showToast('📺 Chromecast prêt'); }
-};
-async function casterVideo() {
-    if (state.currentIndex === -1 && !video.src) { showToast('⚠️ Lancez d\'abord une vidéo'); return; }
-    const url = state.allVideos[state.currentIndex]?.video || video.src;
-    if (Cast.isCasting) { Cast.load(url, video.currentTime, true); return; }
-    if (typeof video.webkitShowPlaybackTargetPicker === 'function') {
-        try { video.webkitShowPlaybackTargetPicker(); return; } catch {}
-    }
-    if (video.remote && typeof video.remote.prompt === 'function') {
-        try { await video.remote.prompt(); return; } catch {}
-    }
-    if (location.protocol === 'file:') {
-        showToast('⚠️ Chromecast nécessite http(s) — ouvrez via un serveur local', 5000);
-        return;
-    }
-    if (Cast.ctx) {
-        try { await Cast.ctx.requestSession(); return; }
-        catch { showToast('📺 Aucun appareil sélectionné'); return; }
-    }
-    if (!window.chrome && !navigator.userAgent.includes('Edg/')) {
-        showToast('💡 Utilisez Chrome/Edge pour Chromecast, Safari pour AirPlay', 4500);
-        window.open(url, '_blank', 'noopener');
-        return;
-    }
-    Cast.loadSdk();
-    setTimeout(() => {
-        if (Cast.ctx) Cast.ctx.requestSession().catch(() => showToast('📺 Aucun Chromecast détecté'));
-        else showToast('❌ Cast indisponible sur ce réseau');
-    }, 2500);
-}
-
-/* ============================================================
-   MENU CONTEXTUEL
-   ============================================================ */
-function contextAction(action) {
-    $('contextMenu').style.display = 'none';
-    const v = state.contextTarget;
-    if (!v) return;
-    const idx = state.allVideos.indexOf(v);
-    if (action === 'play') jouerVideo(idx);
-    else if (action === 'fav') toggleFavorite(v.video, null);
-    else if (action === 'copy') navigator.clipboard?.writeText(v.video).then(() => showToast('🔗 Lien copié !'));
-    else if (action === 'cast') { jouerVideo(idx); setTimeout(casterVideo, 800); }
-    else if (action === 'thumb') regenThumb(v);
-}
-async function regenThumb(v) {
-    if (v.thumbKind === 'custom') {
-        showToast('🎨 Vignette personnalisée depuis le JSON (non régénérable)');
-        return;
-    }
-    showToast('🖼️ Régénération en cours…');
-    await Cache.set('thumbs', v.video, null);
-    const data = await captureFrame(v.video, v.duration);
-    if (!data) {
-        showToast('❌ Capture impossible (CORS ou fichier)');
-        return;
-    }
-    await Cache.set('thumbs', v.video, data);
-    v.vignette = data; v.thumbKind = 'auto';
-    const img = document.querySelector(`.video-item[data-index="${state.allVideos.indexOf(v)}"] img`);
-    if (img) img.src = data;
-    showToast('✅ Vignette régénérée');
-}
-document.addEventListener('click', e => {
-    if (!e.target.closest('.custom-context-menu')) $('contextMenu').style.display = 'none';
-});
-
-/* ============================================================
-   BOUCLE A-B & NOTES
-   ============================================================ */
-function toggleABLoop(point) {
-    if (point === 'a') {
-        state.abLoop.a = video.currentTime;
-        state.abLoop.active = false;
-        showToast(`🔵 Point A : ${formatTime(state.abLoop.a)}`);
-    } else {
-        if (state.abLoop.a === null) { showToast('⚠️ Définissez d\'abord le point A'); return; }
-        if (video.currentTime <= state.abLoop.a) { showToast('⚠️ B doit être après A'); return; }
-        state.abLoop.b = video.currentTime;
-        state.abLoop.active = true;
-        showToast(`🔴 Point B : ${formatTime(state.abLoop.b)} — boucle ON`);
-    }
-}
-function notesKey() {
-    return state.currentIndex >= 0 ? 'notes_' + state.allVideos[state.currentIndex].video : null;
-}
-function addNote() {
-    const key = notesKey();
-    if (!key) { showToast('⚠️ Lancez une vidéo'); return; }
-    const time = video.currentTime;
-    const text = prompt(`Note à ${formatTime(time)} :`);
-    if (!text) return;
-    const notes = JSON.parse(localStorage.getItem(key) || '[]');
-    notes.push({ time, text, date: new Date().toISOString() });
-    notes.sort((a, b) => a.time - b.time);
-    localStorage.setItem(key, JSON.stringify(notes));
-    showToast('📝 Note ajoutée');
-    displayNotes();
-}
-function deleteNote(i, ev) {
-    ev.stopPropagation();
-    const key = notesKey(); if (!key) return;
-    const notes = JSON.parse(localStorage.getItem(key) || '[]');
-    notes.splice(i, 1);
-    localStorage.setItem(key, JSON.stringify(notes));
-    displayNotes();
-}
-function displayNotes() {
-    const key = notesKey();
-    const list = $('notesList');
-    if (!key) { list.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem">Aucune vidéo en cours.</p>'; return; }
-    const notes = JSON.parse(localStorage.getItem(key) || '[]');
-    if (!notes.length) { list.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem">Aucune note pour ce titre.</p>'; return; }
-    list.innerHTML = notes.map((n, i) =>
-        `<div class="note-item" onclick="seekTo(${n.time})">
-            <button class="note-del" onclick="deleteNote(${i},event)">✕</button>
-            <div class="note-time">${formatTime(n.time)}</div>
-            <div class="note-text">${escapeHtml(n.text)}</div>
-        </div>`).join('');
-}
-function seekTo(t) { video.currentTime = t; video.play().catch(() => {}); }
-function toggleNotesPanel() { $('notesPanel').classList.toggle('open'); displayNotes(); }
-
-/* ============================================================
-   MEDIA SESSION / WAKE LOCK
-   ============================================================ */
-function updateMediaSession() {
-    if (!('mediaSession' in navigator) || state.currentIndex < 0) return;
-    const v = state.allVideos[state.currentIndex];
-    const art = /^https?:/.test(v.vignette || '') ? [{ src: v.vignette, sizes: '512x512', type: 'image/jpeg' }] : [];
-    navigator.mediaSession.metadata = new MediaMetadata({ title: v.titre, artist: 'Rainbow Cinema', artwork: art });
-}
-if ('mediaSession' in navigator) {
-    const h = {
-        play: () => video.play(), pause: () => video.pause(),
-        seekbackward: () => video.currentTime -= 10,
-        seekforward: () => video.currentTime += 10,
-        previoustrack: () => state.currentIndex > 0 && jouerVideo(state.currentIndex - 1),
-        nexttrack: () => state.currentIndex < state.allVideos.length - 1 && jouerVideo(state.currentIndex + 1)
-    };
-    Object.entries(h).forEach(([k, fn]) => { try { navigator.mediaSession.setActionHandler(k, fn); } catch {} });
-}
-async function requestWakeLock() {
-    try {
-        if ('wakeLock' in navigator && !state.wakeLock) {
-            state.wakeLock = await navigator.wakeLock.request('screen');
-            state.wakeLock.addEventListener('release', () => { state.wakeLock = null; });
-        }
-    } catch {}
-}
-function releaseWakeLock() { try { state.wakeLock?.release(); } catch {} state.wakeLock = null; }
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) flushStats();
-    else if (!video.paused) requestWakeLock();
-});
-window.addEventListener('beforeunload', flushStats);
-
-/* ============================================================
-   CLAVIER
-   ============================================================ */
-document.addEventListener('keydown', e => {
-    const inInput = document.activeElement === $('searchInput') || document.activeElement === $('radioCustomUrl');
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('searchInput').focus(); return; }
-    if (inInput) { if (e.key === 'Escape') document.activeElement.blur(); return; }
-    if (e.key === 'Escape') { closeSettings(); $('notesPanel').classList.remove('open'); $('contextMenu').style.display = 'none'; return; }
-    if (e.ctrlKey || e.metaKey) return;
-
-    if (e.altKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        e.preventDefault();
-        const items = [...document.querySelectorAll('.video-item')];
-        if (!items.length) return;
-        const cols = Math.max(1, Math.round($('videoGrid').offsetWidth / items[0].offsetWidth));
-        if (state.focusIndex === -1) state.focusIndex = 0;
-        else {
-            if (e.key === 'ArrowRight') state.focusIndex = Math.min(state.focusIndex + 1, items.length - 1);
-            if (e.key === 'ArrowLeft') state.focusIndex = Math.max(state.focusIndex - 1, 0);
-            if (e.key === 'ArrowDown') state.focusIndex = Math.min(state.focusIndex + cols, items.length - 1);
-            if (e.key === 'ArrowUp') state.focusIndex = Math.max(state.focusIndex - cols, 0);
-        }
-        items.forEach(i => i.classList.remove('focused'));
-        items[state.focusIndex].classList.add('focused');
-        items[state.focusIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-    }
-
-    switch (e.code) {
-        case 'Space': e.preventDefault(); video.paused ? video.play() : video.pause(); break;
-        case 'Enter': if (state.focusIndex >= 0) { const el = document.querySelectorAll('.video-item')[state.focusIndex]; if (el) jouerVideo(+el.dataset.index); } break;
-        case 'KeyF': e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : video.requestFullscreen?.(); break;
-        case 'KeyC': e.preventDefault(); toggleCinemaMode(); break;
-        case 'KeyK': e.preventDefault(); casterVideo(); break;
-        case 'KeyP': e.preventDefault(); toggleRadio(); break;
-        case 'KeyM': e.preventDefault(); video.muted = !video.muted; showToast(video.muted ? '🔇 Muet' : '🔊 Son'); break;
-        case 'KeyN': e.preventDefault(); toggleNotesPanel(); break;
-        case 'KeyR': e.preventDefault(); jouerVideoAleatoire(); break;
-        case 'ArrowRight': e.preventDefault(); video.currentTime = Math.min(video.duration || 0, video.currentTime + 10); break;
-        case 'ArrowLeft': e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 10); break;
-        case 'ArrowUp': e.preventDefault(); video.volume = Math.min(1, video.volume + 0.1); showToast(`🔊 Vidéo ${Math.round(video.volume * 100)}%`, 900); break;
-        case 'ArrowDown': e.preventDefault(); video.volume = Math.max(0, video.volume - 0.1); showToast(`🔉 Vidéo ${Math.round(video.volume * 100)}%`, 900); break;
-        case 'KeyS':
-            e.preventDefault();
-            state.speedIndex = (state.speedIndex + 1) % state.speeds.length;
-            video.playbackRate = state.speeds[state.speedIndex];
-            showToast(`⏩ ${state.speeds[state.speedIndex]}x`);
-            break;
-        case 'KeyL':
-            e.preventDefault();
-            if (state.abLoop.a === null) toggleABLoop('a');
-            else if (state.abLoop.b === null) toggleABLoop('b');
-            else { state.abLoop = { a: null, b: null, active: false }; showToast('🔁 Boucle désactivée'); }
-            break;
-    }
-});
-
-$('searchInput').addEventListener('input', debounce(e => {
-    state.query = e.target.value.trim().toLowerCase();
-    renderGrid();
-}, 200));
-
-/* ============================================================
-   DRAG & DROP
-   ============================================================ */
-document.addEventListener('dragover', e => e.preventDefault());
-document.addEventListener('drop', e => {
-    e.preventDefault();
-    for (const file of e.dataTransfer.files) {
-        if (!file.type.startsWith('video/')) continue;
-        state.currentIndex = -1;
-        state.ready = true;
-        masquerChargement();
-        video.src = URL.createObjectURL(file);
-        appliquerMixRadio();
-        video.play().catch(() => {});
-        $('mainTitle').textContent = file.name;
-        showToast(`📂 Lecture locale : ${file.name}`);
-        break;
-    }
-});
-
-/* ============================================================
-   INITIALISATION
-   ============================================================ */
-document.addEventListener('DOMContentLoaded', () => {
-    if (navigator.storage?.persist) {
-        navigator.storage.persist().then(ok =>
-            console.log('💾 Stockage persistant accordé :', ok)
-        );
-    }
-    setupVideoEvents();
-    initRadio();
-    afficherStats();
-    chargerToutesLesVideos();
-    setInterval(flushStats, 20000);
-    setTimeout(() => playerObserver.observe($('mainPlayer')), 1200);
-    if (location.protocol !== 'file:' && (window.chrome || navigator.userAgent.includes('Edg/'))) Cast.loadSdk();
-    setInterval(genererContinueWatching, 60000);
-});
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
-}
-</script>
-</body>
-</html>
+        this
