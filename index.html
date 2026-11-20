@@ -25,6 +25,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes eq{0%,100%{height:5px}50%{height:20px}}
 @keyframes pulseBtn{0%,100%{box-shadow:0 0 0 0 var(--primary-glow)}50%{box-shadow:0 0 0 10px transparent}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .ambilight-bg{position:fixed;inset:0;background-size:cover;background-position:center;filter:blur(80px) brightness(.25);z-index:-1;transition:background-image .8s ease-in-out;opacity:0}
 .ambilight-bg.active{opacity:1}
 .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
@@ -140,6 +142,15 @@ video{width:100%;height:auto;display:block;max-height:70vh;background:#000}
 .note-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer}
 .note-time{color:var(--primary);font-size:.85rem;font-weight:600}
 .note-text{margin-top:5px;font-size:.9rem;word-break:break-word}
+
+/* ⭐ NOUVEAU : Indicateur de statut de chargement */
+.loading-indicator{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.9);color:#fff;padding:20px 30px;border-radius:12px;z-index:1000;display:none;text-align:center;min-width:250px;box-shadow:0 10px 40px rgba(0,0,0,.8);border:1px solid var(--border)}
+.loading-indicator.active{display:block}
+.loading-spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 15px}
+.loading-text{font-size:.95rem;font-weight:600;margin-bottom:8px}
+.loading-detail{font-size:.8rem;color:var(--text-muted);line-height:1.4}
+.loading-retry{margin-top:12px;font-size:.85rem;color:#f39c12}
+
 ::-webkit-scrollbar{width:8px}
 ::-webkit-scrollbar-track{background:var(--bg-dark)}
 ::-webkit-scrollbar-thumb{background:#444;border-radius:4px}
@@ -153,6 +164,7 @@ body{padding:10px}
 .main-player.mini-player{width:160px;bottom:10px;right:10px}
 .main-player.mini-player video{max-height:90px}
 .notes-panel{width:100%;right:-100%}
+.loading-indicator{min-width:200px;padding:15px 20px}
 }
 </style>
 </head>
@@ -182,6 +194,15 @@ body{padding:10px}
 
 <div class="main-player" id="mainPlayer">
     <button class="mini-expand" onclick="sortirMiniPlayer()" title="Revenir au lecteur">⤢</button>
+    
+    <!-- ⭐ NOUVEAU : Indicateur de chargement -->
+    <div class="loading-indicator" id="loadingIndicator">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Chargement de la vidéo...</div>
+        <div class="loading-detail" id="loadingDetail">Connexion au serveur...</div>
+        <div class="loading-retry" id="loadingRetry"></div>
+    </div>
+    
     <video id="mainVideo" controls playsinline x-webkit-airplay="allow" preload="metadata"></video>
     <div class="video-info">
         <h2 id="mainTitle">Chargement de votre bibliothèque...</h2>
@@ -310,10 +331,17 @@ body{padding:10px}
 const CONFIG = {
     ARCHIVE_USERNAME: "Mikeboy58",
     MAX_VIDEOS: 100,
-    META_CONCURRENCY: 3,      // ⭐ Réduit de 6 à 3
-    THUMB_CONCURRENCY: 1,     // ⭐ Réduit de 2 à 1
+    META_CONCURRENCY: 3,
+    THUMB_CONCURRENCY: 1,
     THUMB_SEEK_RATIO: 0.12,
-    META_TTL: 1000 * 60 * 60 * 12
+    META_TTL: 1000 * 60 * 60 * 12,
+    // ⭐ NOUVEAU : Configuration du retry
+    MAX_RETRIES: 3,
+    RETRY_DELAYS: [1000, 2000, 4000],  // Backoff exponentiel
+    PROXY_URLS: [
+        'https://corsproxy.io/?',
+        'https://api.allorigins.win/raw?url='
+    ]
 };
 
 const state = {
@@ -333,7 +361,11 @@ const state = {
     autoThumb: localStorage.getItem('autoThumb') !== '0',
     watchedSeconds: 0,
     lastTick: null,
-    stableTried: false        // ⭐ Ajouté pour le repli automatique
+    stableTried: false,
+    // ⭐ NOUVEAU : État du retry
+    retryCount: 0,
+    currentUrl: null,
+    bestServer: null
 };
 
 const $ = id => document.getElementById(id);
@@ -392,10 +424,177 @@ function placeholderFor(title) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
-// ⭐ NOUVELLE FONCTION : Convertit les URLs fragiles en URLs stables
+// ⭐ Convertir URLs fragiles en URLs stables
 function versLienStable(url) {
     const m = String(url).match(/\/(?:items|download)\/([^/?#]+)\/(.+)$/);
     return m ? `https://archive.org/download/${m[1]}/${m[2]}` : null;
+}
+
+// ⭐ NOUVEAU : Afficher l'indicateur de chargement
+function afficherChargement(texte, detail = '', retry = '') {
+    const indicator = $('loadingIndicator');
+    $('loadingText').textContent = texte;
+    $('loadingDetail').textContent = detail;
+    $('loadingRetry').textContent = retry;
+    indicator.classList.add('active');
+}
+
+function masquerChargement() {
+    $('loadingIndicator').classList.remove('active');
+}
+
+// ⭐ NOUVEAU : Tester si une URL est accessible
+async function testerURL(url, timeout = 5000) {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        const response = await fetch(url, {
+            method: 'HEAD',
+            mode: 'no-cors',
+            cache: 'no-cache',
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        return response.ok || response.type === 'opaque';
+    } catch (e) {
+        return false;
+    }
+}
+
+// ⭐ NOUVEAU : Générer toutes les URLs de fallback pour une vidéo
+function genererURLsFallback(urlBase) {
+    const urls = [];
+    
+    // 1. URL stable archive.org/download/
+    const stable = versLienStable(urlBase);
+    if (stable) urls.push({ url: stable, type: 'stable', priority: 1 });
+    
+    // 2. URL directe vers le serveur
+    urls.push({ url: urlBase, type: 'direct', priority: 2 });
+    
+    // 3. Via proxy CORS
+    CONFIG.PROXY_URLS.forEach((proxy, i) => {
+        urls.push({ 
+            url: proxy + encodeURIComponent(stable || urlBase), 
+            type: 'proxy', 
+            priority: 3 + i 
+        });
+    });
+    
+    return urls.sort((a, b) => a.priority - b.priority);
+}
+
+// ⭐ NOUVEAU : Charger la vidéo avec retry automatique
+async function chargerVideoAvecRetry(urls, index = 0) {
+    if (index >= urls.length) {
+        masquerChargement();
+        showToast('❌ Impossible de charger la vidéo (toutes les méthodes ont échoué)', 5000);
+        return false;
+    }
+    
+    const { url, type } = urls[index];
+    const attempt = state.retryCount + 1;
+    
+    let typeText = 'URL stable';
+    if (type === 'direct') typeText = 'Serveur direct';
+    if (type === 'proxy') typeText = 'Proxy CORS';
+    
+    afficherChargement(
+        `Chargement de la vidéo...`,
+        `Méthode ${index + 1}/${urls.length} : ${typeText}`,
+        `Tentative ${attempt}/${CONFIG.MAX_RETRIES}`
+    );
+    
+    console.log(`[Rainbow] Tentative ${attempt} avec ${type}: ${url}`);
+    
+    try {
+        // Tester rapidement si l'URL est accessible
+        const accessible = await testerURL(url, 3000);
+        
+        if (!accessible && type === 'direct') {
+            console.log(`[Rainbow] URL ${type} non accessible, passage au suivant`);
+            state.retryCount = 0;
+            return chargerVideoAvecRetry(urls, index + 1);
+        }
+        
+        // Charger la vidéo
+        return new Promise((resolve) => {
+            const onLoadStart = () => {
+                afficherChargement(
+                    'Connexion établie !',
+                    `Via ${typeText}`,
+                    'Chargement des métadonnées...'
+                );
+            };
+            
+            const onLoadedMetadata = () => {
+                masquerChargement();
+                video.removeEventListener('loadstart', onLoadStart);
+                video.removeEventListener('loadedmetadata', onLoadedMetadata);
+                video.removeEventListener('error', onError);
+                resolve(true);
+            };
+            
+            const onError = () => {
+                video.removeEventListener('loadstart', onLoadStart);
+                video.removeEventListener('loadedmetadata', onLoadedMetadata);
+                video.removeEventListener('error', onError);
+                
+                const err = video.error;
+                let errorType = 'inconnue';
+                
+                if (err) {
+                    if (err.code === MediaError.MEDIA_ERR_ABORTED) {
+                        // Ignorer les erreurs d'abandon
+                        resolve(false);
+                        return;
+                    }
+                    
+                    errorType = {
+                        [MediaError.MEDIA_ERR_NETWORK]: 'réseau (403/404)',
+                        [MediaError.MEDIA_ERR_DECODE]: 'codec non supporté',
+                        [MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED]: 'fichier introuvable ou CORS'
+                    }[err.code] || 'inconnue';
+                }
+                
+                console.log(`[Rainbow] Erreur ${errorType} avec ${type}`);
+                
+                // Si on n'a pas encore épuisé les retries
+                if (state.retryCount < CONFIG.MAX_RETRIES) {
+                    state.retryCount++;
+                    const delay = CONFIG.RETRY_DELAYS[state.retryCount - 1] || 2000;
+                    
+                    afficherChargement(
+                        `Erreur ${errorType}`,
+                        `Nouvelle tentative dans ${delay/1000}s...`,
+                        `Tentative ${attempt + 1}/${CONFIG.MAX_RETRIES}`
+                    );
+                    
+                    setTimeout(() => {
+                        chargerVideoAvecRetry(urls, index).then(resolve);
+                    }, delay);
+                } else {
+                    // Passer au type d'URL suivant
+                    state.retryCount = 0;
+                    chargerVideoAvecRetry(urls, index + 1).then(resolve);
+                }
+            };
+            
+            video.addEventListener('loadstart', onLoadStart);
+            video.addEventListener('loadedmetadata', onLoadedMetadata);
+            video.addEventListener('error', onError);
+            
+            video.src = url;
+            video.load();
+        });
+        
+    } catch (e) {
+        console.error(`[Rainbow] Exception avec ${type}:`, e);
+        state.retryCount = 0;
+        return chargerVideoAvecRetry(urls, index + 1);
+    }
 }
 
 /* ============================================================
@@ -889,7 +1088,6 @@ async function chargerToutesLesVideos() {
             const list = await res.json();
             (Array.isArray(list) ? list : []).forEach(v => {
                 if (!v.video) return;
-                // ⭐ MODIFICATION : support des clés "vignette" ET "image" depuis le JSON
                 const customThumb = v.vignette || v.image || null;
                 combined.push({
                     titre: v.titre || v.video.split('/').pop(),
@@ -949,7 +1147,7 @@ async function chargerToutesLesVideos() {
     genererContinueWatching();
     afficherStats();
     
-    // ⭐ MODIFICATION : Éviter le double chargement au démarrage
+    // Éviter le double chargement au démarrage
     if (new URLSearchParams(location.search).get('v')) {
         chargerVideoDepuisURL();
     } else {
@@ -963,18 +1161,15 @@ async function chargerToutesLesVideos() {
 const thumbQueue = [];
 let thumbRunning = 0;
 
-// ⭐ MODIFICATION : ne pas traiter les vidéos avec jaquette personnalisée (custom)
 function enqueueThumb(videoObj, imgEl, flagEl) {
     if (videoObj.thumbKind === 'custom' || videoObj.skipAutoThumb) return;
     if (!state.autoThumb) return;
     if (navigator.connection?.saveData) return;
-    // ⭐ MODIFICATION : ne pas capturer pendant qu'une vidéo charge
     if (!state.ready) return;
     thumbQueue.push({ videoObj, imgEl, flagEl });
     pumpThumbQueue();
 }
 function pumpThumbQueue() {
-    // ⭐ MODIFICATION : ne pas capturer pendant qu'une vidéo charge
     if (!state.ready) return;
     while (thumbRunning < CONFIG.THUMB_CONCURRENCY && thumbQueue.length) {
         const job = thumbQueue.shift();
@@ -1065,13 +1260,11 @@ const lazyObserver = new IntersectionObserver(entries => {
         if (!v) return;
         const flag = img.parentElement.querySelector('.thumb-flag');
 
-        // ⭐ MODIFICATION : Si la vidéo a déjà une vignette custom depuis le JSON, on l'affiche directement
         if (v.thumbKind === 'custom' && v.vignette) {
             img.src = v.vignette;
             img.addEventListener('error', () => {
                 if (img.dataset.failed === '1') return;
                 img.dataset.failed = '1';
-                // Fallback vers placeholder si la jaquette custom ne charge pas
                 img.src = placeholderFor(v.titre);
             }, { once: true });
             return;
@@ -1128,7 +1321,6 @@ function renderGrid() {
         img.src = placeholderFor(v.titre);
         if (v.vignette) img.dataset.pending = '1';
 
-        // ⭐ MODIFICATION : libellé du flag selon la source de la vignette
         const flag = document.createElement('span');
         flag.className = 'thumb-flag';
         let flagText = '🖼️ item';
@@ -1217,7 +1409,7 @@ function jouerVideo(index, options = {}) {
     state.currentIndex = index;
     state.ready = false;
     state.abLoop = { a: null, b: null, active: false };
-    state.stableTried = false;  // ⭐ Réinitialisé à chaque nouvelle vidéo
+    state.retryCount = 0;  // ⭐ Reset du compteur de retry
     
     const v = state.allVideos[index];
     const resume = options.startTime ?? (getProgress(v.video)?.t || 0);
@@ -1239,14 +1431,24 @@ function jouerVideo(index, options = {}) {
         video.playbackRate = state.speeds[state.speedIndex];
         appliquerMixRadio();
         state.ready = true;
+        masquerChargement();  // ⭐ Masquer l'indicateur quand prêt
         if (!Cast.isCasting) video.play().catch(() => {});
     };
-    video.addEventListener('loadedmetadata', onMeta, { once: true });
     
-    // ⭐ MODIFICATION : utiliser l'URL stable en priorité
-    const stableUrl = versLienStable(v.video) || v.video;
-    video.src = stableUrl;
-    video.load();
+    const onPlay = () => {
+        masquerChargement();  // ⭐ Masquer aussi quand la lecture commence
+    };
+    
+    video.addEventListener('loadedmetadata', onMeta, { once: true });
+    video.addEventListener('play', onPlay, { once: true });
+    
+    // ⭐ NOUVEAU : Utiliser le système de retry intelligent
+    const urls = genererURLsFallback(v.video);
+    chargerVideoAvecRetry(urls).then(success => {
+        if (!success) {
+            $('mainTitle').textContent = '❌ Impossible de charger la vidéo';
+        }
+    });
 
     localStorage.setItem('lastVideoUrl', v.video);
     updateActiveStates();
@@ -1254,7 +1456,7 @@ function jouerVideo(index, options = {}) {
     displayNotes();
     sortirMiniPlayer(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (Cast.isCasting) Cast.load(stableUrl, resume, true);
+    if (Cast.isCasting) Cast.load(v.video, resume, true);
 }
 
 function setupVideoEvents() {
@@ -1300,33 +1502,14 @@ function setupVideoEvents() {
     });
     video.addEventListener('play', requestWakeLock);
     
-    // ⭐ MODIFICATION : handler d'erreur intelligent avec filtrage et repli automatique
+    // ⭐ NOUVEAU : Handler d'erreur simplifié (le retry est géré par chargerVideoAvecRetry)
     video.addEventListener('error', () => {
         const err = video.error;
-        if (!err) return;
+        if (!err || err.code === MediaError.MEDIA_ERR_ABORTED) return;
         
-        // Filtrer MEDIA_ERR_ABORTED (faux positif lors de changement de src)
-        if (err.code === MediaError.MEDIA_ERR_ABORTED) return;
-        
-        // Repli automatique vers URL stable si SRC_NOT_SUPPORTED
-        const stable = versLienStable(video.src);
-        if (err.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED &&
-            stable && stable !== video.src && !state.stableTried) {
-            state.stableTried = true;
-            showToast('🔄 Nouvelle tentative via archive.org/download…');
-            video.src = stable;
-            video.load();
-            return;
-        }
-        
-        // Messages d'erreur détaillés
-        const msg = {
-            [MediaError.MEDIA_ERR_NETWORK]: 'réseau coupé ou flux limité par Archive.org (403)',
-            [MediaError.MEDIA_ERR_DECODE]: 'fichier corrompu / codec non supporté',
-            [MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED]: 'fichier introuvable (404) ou item en cours de traitement'
-        }[err.code] || 'erreur inconnue';
-        
-        showToast(`❌ Lecture impossible : ${msg}`, 5000);
+        // Ne pas afficher d'erreur ici car chargerVideoAvecRetry gère déjà les retries
+        // Cette erreur sera traitée par le handler onError dans chargerVideoAvecRetry
+        console.log('[Rainbow] Erreur vidéo détectée, retry en cours...');
     });
 }
 
@@ -1340,13 +1523,10 @@ function restaurerSession() {
     $('mainTitle').textContent = v.titre;
     video.poster = v.vignette || placeholderFor(v.titre);
     
-    // ⭐ MODIFICATION : utiliser l'URL stable
-    const stableUrl = versLienStable(v.video) || v.video;
-    video.src = stableUrl;
-    
     if (v.vignette) { $('ambilightBg').style.backgroundImage = `url("${v.vignette}")`; $('ambilightBg').classList.add('active'); }
     const p = getProgress(v.video);
-    video.addEventListener('loadedmetadata', () => {
+    
+    const onMeta = () => {
         if (p && p.t > 5 && p.t < video.duration - 3) {
             video.currentTime = p.t;
             $('resumeBadge').style.display = 'inline-block';
@@ -1354,7 +1534,15 @@ function restaurerSession() {
         }
         appliquerMixRadio();
         state.ready = true;
-    }, { once: true });
+        masquerChargement();
+    };
+    
+    video.addEventListener('loadedmetadata', onMeta, { once: true });
+    
+    // ⭐ Utiliser le système de retry intelligent
+    const urls = genererURLsFallback(v.video);
+    chargerVideoAvecRetry(urls);
+    
     updateActiveStates();
     updateMediaSession();
     displayNotes();
@@ -1433,7 +1621,7 @@ const Cast = {
     load(url, time, autoplay) {
         const session = this.ctx?.getCurrentSession();
         if (!session) return;
-        const stableUrl = versLienStable(url) || url;  // ⭐ URL stable pour cast
+        const stableUrl = versLienStable(url) || url;
         const info = new chrome.cast.media.MediaInfo(stableUrl, 'video/mp4');
         info.metadata = new chrome.cast.media.GenericMediaMetadata();
         info.metadata.title = state.allVideos[state.currentIndex]?.titre || 'Rainbow Cinema';
@@ -1506,7 +1694,6 @@ function contextAction(action) {
     else if (action === 'thumb') regenThumb(v);
 }
 async function regenThumb(v) {
-    // ⭐ MODIFICATION : ne pas permettre de régénérer une vignette custom définie dans le JSON
     if (v.thumbKind === 'custom') {
         showToast('🎨 Vignette personnalisée depuis le JSON (non régénérable)');
         return;
