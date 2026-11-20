@@ -26,7 +26,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 @keyframes eq{0%,100%{height:5px}50%{height:20px}}
 @keyframes pulseBtn{0%,100%{box-shadow:0 0 0 0 var(--primary-glow)}50%{box-shadow:0 0 0 10px transparent}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes loadSlide{0%{left:-45%}100%{left:105%}}
 .ambilight-bg{position:fixed;inset:0;background-size:cover;background-position:center;filter:blur(80px) brightness(.25);z-index:-1;transition:background-image .8s ease-in-out;opacity:0}
 .ambilight-bg.active{opacity:1}
 .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
@@ -58,6 +58,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .mini-expand{display:none;position:absolute;top:6px;right:6px;z-index:5;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer}
 .main-player.mini-player .mini-expand{display:block}
 video{width:100%;height:auto;display:block;max-height:70vh;background:#000}
+
+/* ⭐ Indicateur de chargement compact : barre fine + pastille coin */
+.load-bar{position:absolute;top:0;left:0;width:100%;height:3px;z-index:60;display:none;overflow:hidden;pointer-events:none}
+.load-bar.active{display:block}
+.load-bar::after{content:'';position:absolute;top:0;left:-45%;width:45%;height:100%;background:var(--primary);box-shadow:0 0 8px var(--primary-glow);animation:loadSlide 1.1s ease-in-out infinite}
+.load-pill{position:absolute;top:8px;left:8px;z-index:61;display:none;align-items:center;gap:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(4px);cursor:pointer;user-select:none}
+.load-pill.active{display:flex}
+.load-pill.err{color:#ffb14a;border-color:rgba(255,177,74,.5)}
+.load-pill .spin{width:10px;height:10px;border:2px solid rgba(255,255,255,.35);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+.load-pill.err .spin{display:none}
+.load-tip{position:absolute;top:36px;left:8px;z-index:61;display:none;background:rgba(0,0,0,.85);color:#eee;font-size:11px;line-height:1.5;padding:8px 10px;border-radius:8px;max-width:250px;border:1px solid rgba(255,255,255,.12);pointer-events:none}
+.load-tip.active{display:block}
+/* Pour masquer totalement l'indicateur, décommentez la ligne ci-dessous : */
+/* .load-bar,.load-pill,.load-tip{display:none!important} */
+
 .video-info{padding:15px 20px;background:var(--bg-card);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
 .video-info h2{font-size:1.3rem;font-weight:600;flex:1;min-width:200px}
 .badge-resume{background:var(--primary);color:#fff;font-size:.75rem;padding:4px 10px;border-radius:4px;display:none;white-space:nowrap;font-weight:600}
@@ -142,15 +157,6 @@ video{width:100%;height:auto;display:block;max-height:70vh;background:#000}
 .note-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer}
 .note-time{color:var(--primary);font-size:.85rem;font-weight:600}
 .note-text{margin-top:5px;font-size:.9rem;word-break:break-word}
-
-/* ⭐ NOUVEAU : Indicateur de statut de chargement */
-.loading-indicator{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.9);color:#fff;padding:20px 30px;border-radius:12px;z-index:1000;display:none;text-align:center;min-width:250px;box-shadow:0 10px 40px rgba(0,0,0,.8);border:1px solid var(--border)}
-.loading-indicator.active{display:block}
-.loading-spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 15px}
-.loading-text{font-size:.95rem;font-weight:600;margin-bottom:8px}
-.loading-detail{font-size:.8rem;color:var(--text-muted);line-height:1.4}
-.loading-retry{margin-top:12px;font-size:.85rem;color:#f39c12}
-
 ::-webkit-scrollbar{width:8px}
 ::-webkit-scrollbar-track{background:var(--bg-dark)}
 ::-webkit-scrollbar-thumb{background:#444;border-radius:4px}
@@ -164,7 +170,6 @@ body{padding:10px}
 .main-player.mini-player{width:160px;bottom:10px;right:10px}
 .main-player.mini-player video{max-height:90px}
 .notes-panel{width:100%;right:-100%}
-.loading-indicator{min-width:200px;padding:15px 20px}
 }
 </style>
 </head>
@@ -194,15 +199,14 @@ body{padding:10px}
 
 <div class="main-player" id="mainPlayer">
     <button class="mini-expand" onclick="sortirMiniPlayer()" title="Revenir au lecteur">⤢</button>
-    
-    <!-- ⭐ NOUVEAU : Indicateur de chargement -->
-    <div class="loading-indicator" id="loadingIndicator">
-        <div class="loading-spinner"></div>
-        <div class="loading-text" id="loadingText">Chargement de la vidéo...</div>
-        <div class="loading-detail" id="loadingDetail">Connexion au serveur...</div>
-        <div class="loading-retry" id="loadingRetry"></div>
+
+    <!-- ⭐ Indicateur compact : barre fine + pastille (cliquer la pastille = détails) -->
+    <div class="load-bar" id="loadBar"></div>
+    <div class="load-pill" id="loadPill" onclick="document.getElementById('loadTip').classList.toggle('active')">
+        <span class="spin"></span><span id="loadPillText">chargement…</span>
     </div>
-    
+    <div class="load-tip" id="loadTip"></div>
+
     <video id="mainVideo" controls playsinline x-webkit-airplay="allow" preload="metadata"></video>
     <div class="video-info">
         <h2 id="mainTitle">Chargement de votre bibliothèque...</h2>
@@ -335,9 +339,8 @@ const CONFIG = {
     THUMB_CONCURRENCY: 1,
     THUMB_SEEK_RATIO: 0.12,
     META_TTL: 1000 * 60 * 60 * 12,
-    // ⭐ NOUVEAU : Configuration du retry
     MAX_RETRIES: 3,
-    RETRY_DELAYS: [1000, 2000, 4000],  // Backoff exponentiel
+    RETRY_DELAYS: [1000, 2000, 4000],
     PROXY_URLS: [
         'https://corsproxy.io/?',
         'https://api.allorigins.win/raw?url='
@@ -361,11 +364,7 @@ const state = {
     autoThumb: localStorage.getItem('autoThumb') !== '0',
     watchedSeconds: 0,
     lastTick: null,
-    stableTried: false,
-    // ⭐ NOUVEAU : État du retry
-    retryCount: 0,
-    currentUrl: null,
-    bestServer: null
+    retryCount: 0
 };
 
 const $ = id => document.getElementById(id);
@@ -424,38 +423,55 @@ function placeholderFor(title) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
-// ⭐ Convertir URLs fragiles en URLs stables
 function versLienStable(url) {
     const m = String(url).match(/\/(?:items|download)\/([^/?#]+)\/(.+)$/);
     return m ? `https://archive.org/download/${m[1]}/${m[2]}` : null;
 }
 
-// ⭐ NOUVEAU : Afficher l'indicateur de chargement
+/* ============================================================
+   ⭐ INDICATEUR DE CHARGEMENT COMPACT
+   ============================================================ */
 function afficherChargement(texte, detail = '', retry = '') {
-    const indicator = $('loadingIndicator');
-    $('loadingText').textContent = texte;
-    $('loadingDetail').textContent = detail;
-    $('loadingRetry').textContent = retry;
-    indicator.classList.add('active');
+    const pill = $('loadPill'), bar = $('loadBar'), tip = $('loadTip');
+    if (!pill) return;
+    bar.classList.add('active');
+    pill.classList.add('active');
+    pill.classList.remove('err');
+    const m = String(retry).match(/(\d+)\s*\/\s*(\d+)/);
+    $('loadPillText').textContent = m ? `essai ${m[1]}/${m[2]}` : 'chargement…';
+    tip.innerHTML = `<b>${escapeHtml(texte)}</b>` +
+        (detail ? `<br>${escapeHtml(detail)}` : '') +
+        (retry ? `<br>${escapeHtml(retry)}` : '');
+    pill.title = texte + (detail ? ' — ' + detail : '');
 }
-
 function masquerChargement() {
-    $('loadingIndicator').classList.remove('active');
+    $('loadBar')?.classList.remove('active');
+    $('loadPill')?.classList.remove('active', 'err');
+    $('loadTip')?.classList.remove('active');
+}
+function chargementErreur(msg) {
+    const pill = $('loadPill');
+    if (!pill) return;
+    $('loadBar').classList.remove('active');
+    pill.classList.add('active', 'err');
+    $('loadPillText').textContent = 'erreur';
+    $('loadTip').innerHTML = `<b>❌ ${escapeHtml(msg)}</b>`;
+    setTimeout(masquerChargement, 4000);
 }
 
-// ⭐ NOUVEAU : Tester si une URL est accessible
+/* ============================================================
+   ⭐ SYSTÈME DE FIABILISATION (retry + fallback)
+   ============================================================ */
 async function testerURL(url, timeout = 5000) {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
-        
         const response = await fetch(url, {
             method: 'HEAD',
             mode: 'no-cors',
             cache: 'no-cache',
             signal: controller.signal
         });
-        
         clearTimeout(timeoutId);
         return response.ok || response.type === 'opaque';
     } catch (e) {
@@ -463,63 +479,51 @@ async function testerURL(url, timeout = 5000) {
     }
 }
 
-// ⭐ NOUVEAU : Générer toutes les URLs de fallback pour une vidéo
 function genererURLsFallback(urlBase) {
     const urls = [];
-    
-    // 1. URL stable archive.org/download/
     const stable = versLienStable(urlBase);
     if (stable) urls.push({ url: stable, type: 'stable', priority: 1 });
-    
-    // 2. URL directe vers le serveur
     urls.push({ url: urlBase, type: 'direct', priority: 2 });
-    
-    // 3. Via proxy CORS
     CONFIG.PROXY_URLS.forEach((proxy, i) => {
-        urls.push({ 
-            url: proxy + encodeURIComponent(stable || urlBase), 
-            type: 'proxy', 
-            priority: 3 + i 
+        urls.push({
+            url: proxy + encodeURIComponent(stable || urlBase),
+            type: 'proxy',
+            priority: 3 + i
         });
     });
-    
     return urls.sort((a, b) => a.priority - b.priority);
 }
 
-// ⭐ NOUVEAU : Charger la vidéo avec retry automatique
 async function chargerVideoAvecRetry(urls, index = 0) {
     if (index >= urls.length) {
-        masquerChargement();
-        showToast('❌ Impossible de charger la vidéo (toutes les méthodes ont échoué)', 5000);
+        chargementErreur('Vidéo injoignable (serveur Archive.org indisponible ou CORS)');
         return false;
     }
-    
+
     const { url, type } = urls[index];
     const attempt = state.retryCount + 1;
-    
+
     let typeText = 'URL stable';
     if (type === 'direct') typeText = 'Serveur direct';
     if (type === 'proxy') typeText = 'Proxy CORS';
-    
+
     afficherChargement(
-        `Chargement de la vidéo...`,
+        'Chargement de la vidéo...',
         `Méthode ${index + 1}/${urls.length} : ${typeText}`,
         `Tentative ${attempt}/${CONFIG.MAX_RETRIES}`
     );
-    
+
     console.log(`[Rainbow] Tentative ${attempt} avec ${type}: ${url}`);
-    
+
     try {
-        // Tester rapidement si l'URL est accessible
         const accessible = await testerURL(url, 3000);
-        
+
         if (!accessible && type === 'direct') {
-            console.log(`[Rainbow] URL ${type} non accessible, passage au suivant`);
+            console.log(`[Rainbow] URL ${type} non accessible, méthode suivante`);
             state.retryCount = 0;
             return chargerVideoAvecRetry(urls, index + 1);
         }
-        
-        // Charger la vidéo
+
         return new Promise((resolve) => {
             const onLoadStart = () => {
                 afficherChargement(
@@ -528,7 +532,7 @@ async function chargerVideoAvecRetry(urls, index = 0) {
                     'Chargement des métadonnées...'
                 );
             };
-            
+
             const onLoadedMetadata = () => {
                 masquerChargement();
                 video.removeEventListener('loadstart', onLoadStart);
@@ -536,60 +540,56 @@ async function chargerVideoAvecRetry(urls, index = 0) {
                 video.removeEventListener('error', onError);
                 resolve(true);
             };
-            
+
             const onError = () => {
                 video.removeEventListener('loadstart', onLoadStart);
                 video.removeEventListener('loadedmetadata', onLoadedMetadata);
                 video.removeEventListener('error', onError);
-                
+
                 const err = video.error;
+                if (err && err.code === MediaError.MEDIA_ERR_ABORTED) {
+                    resolve(false);
+                    return;
+                }
+
                 let errorType = 'inconnue';
-                
                 if (err) {
-                    if (err.code === MediaError.MEDIA_ERR_ABORTED) {
-                        // Ignorer les erreurs d'abandon
-                        resolve(false);
-                        return;
-                    }
-                    
                     errorType = {
                         [MediaError.MEDIA_ERR_NETWORK]: 'réseau (403/404)',
                         [MediaError.MEDIA_ERR_DECODE]: 'codec non supporté',
                         [MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED]: 'fichier introuvable ou CORS'
                     }[err.code] || 'inconnue';
                 }
-                
+
                 console.log(`[Rainbow] Erreur ${errorType} avec ${type}`);
-                
-                // Si on n'a pas encore épuisé les retries
+
                 if (state.retryCount < CONFIG.MAX_RETRIES) {
                     state.retryCount++;
                     const delay = CONFIG.RETRY_DELAYS[state.retryCount - 1] || 2000;
-                    
+
                     afficherChargement(
                         `Erreur ${errorType}`,
-                        `Nouvelle tentative dans ${delay/1000}s...`,
+                        `Nouvelle tentative dans ${delay / 1000}s...`,
                         `Tentative ${attempt + 1}/${CONFIG.MAX_RETRIES}`
                     );
-                    
+
                     setTimeout(() => {
                         chargerVideoAvecRetry(urls, index).then(resolve);
                     }, delay);
                 } else {
-                    // Passer au type d'URL suivant
                     state.retryCount = 0;
                     chargerVideoAvecRetry(urls, index + 1).then(resolve);
                 }
             };
-            
+
             video.addEventListener('loadstart', onLoadStart);
             video.addEventListener('loadedmetadata', onLoadedMetadata);
             video.addEventListener('error', onError);
-            
+
             video.src = url;
             video.load();
         });
-        
+
     } catch (e) {
         console.error(`[Rainbow] Exception avec ${type}:`, e);
         state.retryCount = 0;
@@ -660,7 +660,7 @@ const Cache = (() => {
 })();
 
 /* ============================================================
-   PROGRESSION (format {t,d} + rétrocompat ancien format)
+   PROGRESSION
    ============================================================ */
 function getProgress(url) {
     const raw = localStorage.getItem('progress_' + url);
@@ -1030,7 +1030,7 @@ function toggleFavorite(url, ev) {
 }
 
 /* ============================================================
-   MÉTADONNÉES ARCHIVE.ORG — vignette PAR FICHIER
+   MÉTADONNÉES ARCHIVE.ORG
    ============================================================ */
 function choisirFichierVideo(files) {
     const mp4 = files.filter(f => f.name && /\.mp4$/i.test(f.name));
@@ -1146,8 +1146,7 @@ async function chargerToutesLesVideos() {
     renderGrid();
     genererContinueWatching();
     afficherStats();
-    
-    // Éviter le double chargement au démarrage
+
     if (new URLSearchParams(location.search).get('v')) {
         chargerVideoDepuisURL();
     } else {
@@ -1156,7 +1155,7 @@ async function chargerToutesLesVideos() {
 }
 
 /* ============================================================
-   CAPTURE DE VIGNETTE DEPUIS LA VIDÉO + REPLI ANTI-CORS
+   CAPTURE DE VIGNETTE
    ============================================================ */
 const thumbQueue = [];
 let thumbRunning = 0;
@@ -1409,8 +1408,8 @@ function jouerVideo(index, options = {}) {
     state.currentIndex = index;
     state.ready = false;
     state.abLoop = { a: null, b: null, active: false };
-    state.retryCount = 0;  // ⭐ Reset du compteur de retry
-    
+    state.retryCount = 0;
+
     const v = state.allVideos[index];
     const resume = options.startTime ?? (getProgress(v.video)?.t || 0);
     $('mainTitle').textContent = v.titre;
@@ -1431,21 +1430,18 @@ function jouerVideo(index, options = {}) {
         video.playbackRate = state.speeds[state.speedIndex];
         appliquerMixRadio();
         state.ready = true;
-        masquerChargement();  // ⭐ Masquer l'indicateur quand prêt
+        masquerChargement();
         if (!Cast.isCasting) video.play().catch(() => {});
     };
-    
-    const onPlay = () => {
-        masquerChargement();  // ⭐ Masquer aussi quand la lecture commence
-    };
-    
+
+    const onPlay = () => { masquerChargement(); };
+
     video.addEventListener('loadedmetadata', onMeta, { once: true });
     video.addEventListener('play', onPlay, { once: true });
-    
-    // ⭐ NOUVEAU : Utiliser le système de retry intelligent
+
     const urls = genererURLsFallback(v.video);
     chargerVideoAvecRetry(urls).then(success => {
-        if (!success) {
+        if (!success && !state.ready) {
             $('mainTitle').textContent = '❌ Impossible de charger la vidéo';
         }
     });
@@ -1501,15 +1497,11 @@ function setupVideoEvents() {
         }
     });
     video.addEventListener('play', requestWakeLock);
-    
-    // ⭐ NOUVEAU : Handler d'erreur simplifié (le retry est géré par chargerVideoAvecRetry)
+
     video.addEventListener('error', () => {
         const err = video.error;
         if (!err || err.code === MediaError.MEDIA_ERR_ABORTED) return;
-        
-        // Ne pas afficher d'erreur ici car chargerVideoAvecRetry gère déjà les retries
-        // Cette erreur sera traitée par le handler onError dans chargerVideoAvecRetry
-        console.log('[Rainbow] Erreur vidéo détectée, retry en cours...');
+        console.log('[Rainbow] Erreur vidéo détectée, retry géré par chargerVideoAvecRetry...');
     });
 }
 
@@ -1522,10 +1514,10 @@ function restaurerSession() {
     const v = state.allVideos[i];
     $('mainTitle').textContent = v.titre;
     video.poster = v.vignette || placeholderFor(v.titre);
-    
+
     if (v.vignette) { $('ambilightBg').style.backgroundImage = `url("${v.vignette}")`; $('ambilightBg').classList.add('active'); }
     const p = getProgress(v.video);
-    
+
     const onMeta = () => {
         if (p && p.t > 5 && p.t < video.duration - 3) {
             video.currentTime = p.t;
@@ -1536,13 +1528,12 @@ function restaurerSession() {
         state.ready = true;
         masquerChargement();
     };
-    
+
     video.addEventListener('loadedmetadata', onMeta, { once: true });
-    
-    // ⭐ Utiliser le système de retry intelligent
+
     const urls = genererURLsFallback(v.video);
     chargerVideoAvecRetry(urls);
-    
+
     updateActiveStates();
     updateMediaSession();
     displayNotes();
@@ -1587,7 +1578,7 @@ const playerObserver = new IntersectionObserver(entries => {
 }, { threshold: 0.1 });
 
 /* ============================================================
-   CASTING — AirPlay / Remote Playback / Chromecast
+   CASTING
    ============================================================ */
 const Cast = {
     isCasting: false,
@@ -1877,6 +1868,7 @@ document.addEventListener('drop', e => {
         if (!file.type.startsWith('video/')) continue;
         state.currentIndex = -1;
         state.ready = true;
+        masquerChargement();
         video.src = URL.createObjectURL(file);
         appliquerMixRadio();
         video.play().catch(() => {});
