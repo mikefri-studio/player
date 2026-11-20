@@ -58,26 +58,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .mini-expand{display:none;position:absolute;top:6px;right:6px;z-index:5;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer}
 .main-player.mini-player .mini-expand{display:block}
 video{width:100%;height:auto;display:block;max-height:70vh;background:#000}
-
-/* ⭐ Indicateur de chargement compact */
 .load-bar{position:absolute;top:0;left:0;width:100%;height:3px;z-index:60;display:none;overflow:hidden;pointer-events:none}
 .load-bar.active{display:block}
 .load-bar::after{content:'';position:absolute;top:0;left:-45%;width:45%;height:100%;background:var(--primary);box-shadow:0 0 8px var(--primary-glow);animation:loadSlide 1.1s ease-in-out infinite}
 .load-pill{position:absolute;top:8px;left:8px;z-index:61;display:none;align-items:center;gap:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(4px);cursor:pointer;user-select:none}
 .load-pill.active{display:flex}
 .load-pill.err{color:#ffb14a;border-color:rgba(255,177,74,.5)}
-.load-pill.cached{color:#51cf66;border-color:rgba(81,207,102,.5)}
 .load-pill .spin{width:10px;height:10px;border:2px solid rgba(255,255,255,.35);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
 .load-pill.err .spin{display:none}
-.load-pill.cached .spin{display:none}
 .load-tip{position:absolute;top:36px;left:8px;z-index:61;display:none;background:rgba(0,0,0,.85);color:#eee;font-size:11px;line-height:1.5;padding:8px 10px;border-radius:8px;max-width:250px;border:1px solid rgba(255,255,255,.12);pointer-events:none}
 .load-tip.active{display:block}
-
-/* ⭐ Indicateur de préchargement */
-.preload-indicator{position:absolute;bottom:8px;right:8px;z-index:61;display:none;align-items:center;gap:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(4px);pointer-events:none}
-.preload-indicator.active{display:flex}
-.preload-indicator .dot{width:6px;height:6px;background:#51cf66;border-radius:50%;animation:blink 1.5s infinite}
-
 .video-info{padding:15px 20px;background:var(--bg-card);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
 .video-info h2{font-size:1.3rem;font-weight:600;flex:1;min-width:200px}
 .badge-resume{background:var(--primary);color:#fff;font-size:.75rem;padding:4px 10px;border-radius:4px;display:none;white-space:nowrap;font-weight:600}
@@ -89,8 +79,6 @@ video{width:100%;height:auto;display:block;max-height:70vh;background:#000}
 #castBtn.casting{background:linear-gradient(135deg,#34a853,#0f9d58);box-shadow:0 0 16px rgba(52,168,83,.6)}
 #radioBtn.radio-active{background:linear-gradient(135deg,var(--primary),#ff6b35);color:#fff;animation:pulseBtn 2s infinite}
 .stats-display{color:var(--text-muted);font-size:.85rem;margin-left:auto}
-
-/* ---------- RADIO ---------- */
 .radio-panel{display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:22px}
 .radio-panel.open{display:block;animation:fadeIn .3s ease}
 .radio-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
@@ -117,7 +105,6 @@ video{width:100%;height:auto;display:block;max-height:70vh;background:#000}
 .mixer-row>span{min-width:180px}
 .mixer-row input[type=range]{flex:1;min-width:130px;accent-color:var(--primary)}
 .mixer-row select{background:var(--bg-elev);color:var(--text-main);border:1px solid var(--border);border-radius:6px;padding:5px 8px}
-
 .video-list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;border-bottom:1px solid var(--border);padding-bottom:10px;gap:10px;flex-wrap:wrap}
 .filter-tabs{display:flex;gap:10px;flex-wrap:wrap}
 .filter-tab{background:none;border:1px solid var(--border);color:var(--text-muted);padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.85rem;transition:.2s}
@@ -204,16 +191,11 @@ body{padding:10px}
 
 <div class="main-player" id="mainPlayer">
     <button class="mini-expand" onclick="sortirMiniPlayer()" title="Revenir au lecteur">⤢</button>
-
     <div class="load-bar" id="loadBar"></div>
     <div class="load-pill" id="loadPill" onclick="document.getElementById('loadTip').classList.toggle('active')">
         <span class="spin"></span><span id="loadPillText">chargement…</span>
     </div>
     <div class="load-tip" id="loadTip"></div>
-    <div class="preload-indicator" id="preloadIndicator">
-        <span class="dot"></span><span>Préchargement...</span>
-    </div>
-
     <video id="mainVideo" controls playsinline x-webkit-airplay="allow" preload="metadata"></video>
     <div class="video-info">
         <h2 id="mainTitle">Chargement de votre bibliothèque...</h2>
@@ -312,12 +294,6 @@ body{padding:10px}
             <button class="modal-btn secondary" onclick="viderCacheVignettes()">🗑️ Vider le cache des vignettes</button>
         </div>
         <div class="modal-section">
-            <label>💾 Cache vidéo</label>
-            <div style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px" id="videoCacheInfo">Vérification du cache...</div>
-            <button class="modal-btn secondary" onclick="afficherStatsCache()">📊 Statistiques du cache</button>
-            <button class="modal-btn secondary" onclick="viderCacheVideos()">🗑️ Vider le cache vidéo</button>
-        </div>
-        <div class="modal-section">
             <label>💾 Sauvegardes</label>
             <button class="modal-btn" onclick="exportData()">📤 Exporter</button>
             <button class="modal-btn secondary" onclick="document.getElementById('importFile').click()">📥 Importer</button>
@@ -340,9 +316,6 @@ body{padding:10px}
 </div>
 
 <script>
-/* ============================================================
-   CONFIG & ÉTAT
-   ============================================================ */
 const CONFIG = {
     ARCHIVE_USERNAME: "Mikeboy58",
     MAX_VIDEOS: 100,
@@ -352,192 +325,26 @@ const CONFIG = {
     META_TTL: 1000 * 60 * 60 * 12,
     MAX_RETRIES: 3,
     RETRY_DELAYS: [1000, 2000, 4000],
-    PROXY_URLS: [
-        'https://corsproxy.io/?',
-        'https://api.allorigins.win/raw?url='
-    ],
-    // ⭐ Configuration du cache vidéo
-    CACHE_NAME: 'rainbow-videos-v1',
-    CACHE_MAX_SIZE_MB: 2000, // 2 GB max
-    PRELOAD_AHEAD: 2, // Précharger les 2 vidéos suivantes
-    PRELOAD_TRIGGER_PERCENT: 80 // Déclencher à 80% de la vidéo actuelle
+    PROXY_URLS: ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='],
+    BUFFER_MIN_S: 5,
+    BUFFER_MAX_S: 20,
+    BUFFER_RATIO: 0.08,
+    BUFFER_TIMEOUT_MS: 12000
 };
 
 const state = {
-    allVideos: [],
-    visible: [],
-    currentIndex: -1,
-    filter: 'all',
-    query: '',
-    focusIndex: -1,
+    allVideos: [], visible: [], currentIndex: -1, filter: 'all', query: '', focusIndex: -1,
     favorites: JSON.parse(localStorage.getItem('myFavorites') || '[]'),
-    speeds: [0.5, 1, 1.25, 1.5, 2],
-    speedIndex: 1,
+    speeds: [0.5, 1, 1.25, 1.5, 2], speedIndex: 1,
     abLoop: { a: null, b: null, active: false },
-    contextTarget: null,
-    ready: false,
-    wakeLock: null,
+    contextTarget: null, ready: false, wakeLock: null,
     autoThumb: localStorage.getItem('autoThumb') !== '0',
-    watchedSeconds: 0,
-    lastTick: null,
-    retryCount: 0,
-    // ⭐ État du cache
-    preloading: false,
-    videoCache: null
+    watchedSeconds: 0, lastTick: null, retryCount: 0
 };
 
 const $ = id => document.getElementById(id);
 const video = $('mainVideo');
 
-/* ============================================================
-   ⭐ SYSTÈME DE CACHE VIDÉO (Cache Storage API)
-   ============================================================ */
-const VideoCache = (() => {
-    let cachePromise = null;
-
-    async function getCache() {
-        if (!cachePromise) {
-            cachePromise = caches.open(CONFIG.CACHE_NAME);
-        }
-        return cachePromise;
-    }
-
-    async function isCached(url) {
-        try {
-            const cache = await getCache();
-            const response = await cache.match(url);
-            return !!response;
-        } catch {
-            return false;
-        }
-    }
-
-    async function getFromCache(url) {
-        try {
-            const cache = await getCache();
-            return await cache.match(url);
-        } catch {
-            return null;
-        }
-    }
-
-    async function addToCache(url, response) {
-        try {
-            const cache = await getCache();
-            await cache.put(url, response.clone());
-            console.log('[Cache] Vidéo mise en cache:', url);
-            majStatsCache();
-        } catch (e) {
-            console.warn('[Cache] Erreur mise en cache:', e);
-        }
-    }
-
-    async function removeFromCache(url) {
-        try {
-            const cache = await getCache();
-            await cache.delete(url);
-            console.log('[Cache] Vidéo retirée du cache:', url);
-        } catch {}
-    }
-
-    async function getStats() {
-        try {
-            const cache = await getCache();
-            const keys = await cache.keys();
-            let totalSize = 0;
-            const videos = [];
-            
-            for (const request of keys) {
-                const response = await cache.match(request);
-                if (response && response.headers.get('content-type')?.startsWith('video/')) {
-                    const blob = await response.clone().blob();
-                    totalSize += blob.size;
-                    videos.push({
-                        url: request.url,
-                        size: blob.size,
-                        sizeMB: (blob.size / 1024 / 1024).toFixed(2)
-                    });
-                }
-            }
-            
-            return {
-                count: videos.length,
-                totalSize,
-                totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
-                maxSizeMB: CONFIG.CACHE_MAX_SIZE_MB,
-                videos: videos.slice(0, 10) // Top 10
-            };
-        } catch (e) {
-            console.error('[Cache] Erreur stats:', e);
-            return { count: 0, totalSize: 0, totalSizeMB: 0, maxSizeMB: CONFIG.CACHE_MAX_SIZE_MB, videos: [] };
-        }
-    }
-
-    async function cleanup() {
-        try {
-            const stats = await getStats();
-            if (stats.totalSize < CONFIG.CACHE_MAX_SIZE_MB * 1024 * 1024) return;
-            
-            console.log('[Cache] Nettoyage nécessaire, taille actuelle:', stats.totalSizeMB, 'MB');
-            const cache = await getCache();
-            const keys = await cache.keys();
-            
-            // Supprimer les vidéos les plus anciennes (FIFO)
-            for (let i = 0; i < Math.floor(keys.length * 0.2); i++) {
-                await cache.delete(keys[i]);
-            }
-            
-            console.log('[Cache] Nettoyage terminé');
-            majStatsCache();
-        } catch (e) {
-            console.error('[Cache] Erreur nettoyage:', e);
-        }
-    }
-
-    async function clearAll() {
-        try {
-            await caches.delete(CONFIG.CACHE_NAME);
-            cachePromise = null;
-            console.log('[Cache] Cache vidé');
-            majStatsCache();
-        } catch (e) {
-            console.error('[Cache] Erreur vidage:', e);
-        }
-    }
-
-    return { isCached, getFromCache, addToCache, removeFromCache, getStats, cleanup, clearAll };
-})();
-
-async function majStatsCache() {
-    const stats = await VideoCache.getStats();
-    const info = $('videoCacheInfo');
-    if (info) {
-        info.textContent = `Cache : ${stats.count} vidéo(s), ${stats.totalSizeMB} MB / ${stats.maxSizeMB} MB`;
-    }
-}
-
-function afficherStatsCache() {
-    VideoCache.getStats().then(stats => {
-        const msg = `📊 Statistiques du cache vidéo\n\n` +
-            `🎬 ${stats.count} vidéo(s) en cache\n` +
-            `💾 ${stats.totalSizeMB} MB utilisés\n` +
-            `📦 Limite : ${stats.maxSizeMB} MB\n\n` +
-            `Vidéos les plus récentes :\n` +
-            stats.videos.map((v, i) => `${i + 1}. ${v.url.split('/').pop()} (${v.sizeMB} MB)`).join('\n');
-        alert(msg);
-    });
-}
-
-async function viderCacheVideos() {
-    if (!confirm('⚠️ Vider TOUT le cache vidéo ?\n\nLes vidéos devront être retéléchargées.')) return;
-    await VideoCache.clearAll();
-    showToast('🗑️ Cache vidéo vidé');
-    majStatsCache();
-}
-
-/* ============================================================
-   UTILITAIRES
-   ============================================================ */
 function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c =>
         ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -593,15 +400,13 @@ function versLienStable(url) {
     return m ? `https://archive.org/download/${m[1]}/${m[2]}` : null;
 }
 
-/* ============================================================
-   ⭐ INDICATEUR DE CHARGEMENT COMPACT
-   ============================================================ */
+/* ---------- Indicateur compact ---------- */
 function afficherChargement(texte, detail = '', retry = '') {
     const pill = $('loadPill'), bar = $('loadBar'), tip = $('loadTip');
     if (!pill) return;
     bar.classList.add('active');
     pill.classList.add('active');
-    pill.classList.remove('err', 'cached');
+    pill.classList.remove('err');
     const m = String(retry).match(/(\d+)\s*\/\s*(\d+)/);
     $('loadPillText').textContent = m ? `essai ${m[1]}/${m[2]}` : 'chargement…';
     tip.innerHTML = `<b>${escapeHtml(texte)}</b>` +
@@ -609,148 +414,121 @@ function afficherChargement(texte, detail = '', retry = '') {
         (retry ? `<br>${escapeHtml(retry)}` : '');
     pill.title = texte + (detail ? ' — ' + detail : '');
 }
-
-function afficherCache() {
-    const pill = $('loadPill'), bar = $('loadBar'), tip = $('loadTip');
+function afficherTampon(buf, target) {
+    const pill = $('loadPill'), bar = $('loadBar');
     if (!pill) return;
-    bar.classList.remove('active');
-    pill.classList.add('active', 'cached');
+    bar.classList.add('active');
+    pill.classList.add('active');
     pill.classList.remove('err');
-    $('loadPillText').textContent = 'cache ✓';
-    tip.innerHTML = `<b>Chargé depuis le cache local</b>`;
-    setTimeout(masquerChargement, 2000);
+    $('loadPillText').textContent = `tampon ${Math.floor(buf)}s/${Math.floor(target)}s`;
 }
-
 function masquerChargement() {
     $('loadBar')?.classList.remove('active');
-    $('loadPill')?.classList.remove('active', 'err', 'cached');
+    $('loadPill')?.classList.remove('active', 'err');
     $('loadTip')?.classList.remove('active');
 }
-
 function chargementErreur(msg) {
     const pill = $('loadPill');
     if (!pill) return;
     $('loadBar').classList.remove('active');
     pill.classList.add('active', 'err');
-    pill.classList.remove('cached');
     $('loadPillText').textContent = 'erreur';
     $('loadTip').innerHTML = `<b>❌ ${escapeHtml(msg)}</b>`;
     setTimeout(masquerChargement, 4000);
 }
 
-/* ============================================================
-   ⭐ SYSTÈME DE FIABILISATION (retry + fallback + cache)
-   ============================================================ */
+/* ---------- Buffer anti-saccades ---------- */
+function bufferedAhead() {
+    try {
+        for (let i = 0; i < video.buffered.length; i++) {
+            if (video.buffered.start(i) <= video.currentTime && video.buffered.end(i) >= video.currentTime) {
+                return video.buffered.end(i) - video.currentTime;
+            }
+        }
+    } catch {}
+    return 0;
+}
+function attendreBufferAvantLecture() {
+    return new Promise(resolve => {
+        if (!isFinite(video.duration) || video.duration <= 0) { masquerChargement(); return resolve(); }
+        const target = Math.max(CONFIG.BUFFER_MIN_S, Math.min(CONFIG.BUFFER_MAX_S, video.duration * CONFIG.BUFFER_RATIO));
+        let settled = false;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            video.removeEventListener('progress', check);
+            video.removeEventListener('canplay', check);
+            clearTimeout(timeout);
+            masquerChargement();
+            resolve();
+        };
+        const check = () => {
+            const buf = bufferedAhead();
+            if (buf >= target || video.readyState >= 4) finish();
+            else afficherTampon(buf, target);
+        };
+        const timeout = setTimeout(finish, CONFIG.BUFFER_TIMEOUT_MS);
+        video.addEventListener('progress', check);
+        video.addEventListener('canplay', check);
+        check();
+    });
+}
+
+/* ---------- Retry + fallback ---------- */
 async function testerURL(url, timeout = 5000) {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
-        const response = await fetch(url, {
-            method: 'HEAD',
-            mode: 'no-cors',
-            cache: 'no-cache',
-            signal: controller.signal
-        });
+        const response = await fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-cache', signal: controller.signal });
         clearTimeout(timeoutId);
         return response.ok || response.type === 'opaque';
-    } catch (e) {
-        return false;
-    }
+    } catch (e) { return false; }
 }
-
 function genererURLsFallback(urlBase) {
     const urls = [];
     const stable = versLienStable(urlBase);
     if (stable) urls.push({ url: stable, type: 'stable', priority: 1 });
     urls.push({ url: urlBase, type: 'direct', priority: 2 });
     CONFIG.PROXY_URLS.forEach((proxy, i) => {
-        urls.push({
-            url: proxy + encodeURIComponent(stable || urlBase),
-            type: 'proxy',
-            priority: 3 + i
-        });
+        urls.push({ url: proxy + encodeURIComponent(stable || urlBase), type: 'proxy', priority: 3 + i });
     });
     return urls.sort((a, b) => a.priority - b.priority);
 }
-
-async function chargerVideoAvecRetry(urls, index = 0, shouldCache = true) {
+async function chargerVideoAvecRetry(urls, index = 0) {
     if (index >= urls.length) {
         chargementErreur('Vidéo injoignable (serveur Archive.org indisponible ou CORS)');
         return false;
     }
-
     const { url, type } = urls[index];
     const attempt = state.retryCount + 1;
-
     let typeText = 'URL stable';
     if (type === 'direct') typeText = 'Serveur direct';
     if (type === 'proxy') typeText = 'Proxy CORS';
 
-    afficherChargement(
-        'Chargement de la vidéo...',
-        `Méthode ${index + 1}/${urls.length} : ${typeText}`,
-        `Tentative ${attempt}/${CONFIG.MAX_RETRIES}`
-    );
-
-    console.log(`[Rainbow] Tentative ${attempt} avec ${type}: ${url}`);
-
-    // ⭐ Vérifier le cache en premier
-    if (await VideoCache.isCached(url)) {
-        console.log('[Cache] Vidéo trouvée en cache');
-        afficherCache();
-        video.src = url;
-        video.load();
-        return true;
-    }
+    afficherChargement('Chargement de la vidéo...', `Méthode ${index + 1}/${urls.length} : ${typeText}`, `Tentative ${attempt}/${CONFIG.MAX_RETRIES}`);
 
     try {
-        const accessible = await testerURL(url, 3000);
-
-        if (!accessible && type === 'direct') {
-            console.log(`[Rainbow] URL ${type} non accessible, méthode suivante`);
-            state.retryCount = 0;
-            return chargerVideoAvecRetry(urls, index + 1, shouldCache);
+        if (type === 'direct') {
+            const accessible = await testerURL(url, 3000);
+            if (!accessible) {
+                state.retryCount = 0;
+                return chargerVideoAvecRetry(urls, index + 1);
+            }
         }
-
         return new Promise((resolve) => {
-            const onLoadStart = () => {
-                afficherChargement(
-                    'Connexion établie !',
-                    `Via ${typeText}`,
-                    'Chargement des métadonnées...'
-                );
-            };
-
-            const onLoadedMetadata = async () => {
+            const onLoadStart = () => afficherChargement('Connexion établie !', `Via ${typeText}`, 'Chargement des métadonnées...');
+            const onLoadedMetadata = () => {
                 video.removeEventListener('loadstart', onLoadStart);
                 video.removeEventListener('loadedmetadata', onLoadedMetadata);
                 video.removeEventListener('error', onError);
-                
-                // ⭐ Mettre en cache après chargement réussi
-                if (shouldCache) {
-                    try {
-                        const response = await fetch(url, { mode: 'no-cors' });
-                        await VideoCache.addToCache(url, response);
-                    } catch (e) {
-                        console.warn('[Cache] Impossible de mettre en cache:', e);
-                    }
-                }
-                
-                masquerChargement();
                 resolve(true);
             };
-
             const onError = () => {
                 video.removeEventListener('loadstart', onLoadStart);
                 video.removeEventListener('loadedmetadata', onLoadedMetadata);
                 video.removeEventListener('error', onError);
-
                 const err = video.error;
-                if (err && err.code === MediaError.MEDIA_ERR_ABORTED) {
-                    resolve(false);
-                    return;
-                }
-
+                if (err && err.code === MediaError.MEDIA_ERR_ABORTED) { resolve(false); return; }
                 let errorType = 'inconnue';
                 if (err) {
                     errorType = {
@@ -759,87 +537,29 @@ async function chargerVideoAvecRetry(urls, index = 0, shouldCache = true) {
                         [MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED]: 'fichier introuvable ou CORS'
                     }[err.code] || 'inconnue';
                 }
-
-                console.log(`[Rainbow] Erreur ${errorType} avec ${type}`);
-
                 if (state.retryCount < CONFIG.MAX_RETRIES) {
                     state.retryCount++;
                     const delay = CONFIG.RETRY_DELAYS[state.retryCount - 1] || 2000;
-
-                    afficherChargement(
-                        `Erreur ${errorType}`,
-                        `Nouvelle tentative dans ${delay / 1000}s...`,
-                        `Tentative ${attempt + 1}/${CONFIG.MAX_RETRIES}`
-                    );
-
-                    setTimeout(() => {
-                        chargerVideoAvecRetry(urls, index, shouldCache).then(resolve);
-                    }, delay);
+                    afficherChargement(`Erreur ${errorType}`, `Nouvelle tentative dans ${delay / 1000}s...`, `Tentative ${attempt + 1}/${CONFIG.MAX_RETRIES}`);
+                    setTimeout(() => chargerVideoAvecRetry(urls, index).then(resolve), delay);
                 } else {
                     state.retryCount = 0;
-                    chargerVideoAvecRetry(urls, index + 1, shouldCache).then(resolve);
+                    chargerVideoAvecRetry(urls, index + 1).then(resolve);
                 }
             };
-
             video.addEventListener('loadstart', onLoadStart);
             video.addEventListener('loadedmetadata', onLoadedMetadata);
             video.addEventListener('error', onError);
-
             video.src = url;
             video.load();
         });
-
     } catch (e) {
-        console.error(`[Rainbow] Exception avec ${type}:`, e);
         state.retryCount = 0;
-        return chargerVideoAvecRetry(urls, index + 1, shouldCache);
+        return chargerVideoAvecRetry(urls, index + 1);
     }
 }
 
-/* ============================================================
-   ⭐ PRÉCHARGEMENT INTELLIGENT
-   ============================================================ */
-async function prechargerVideosSuivantes() {
-    if (state.preloading || !state.ready || state.currentIndex < 0) return;
-    
-    state.preloading = true;
-    $('preloadIndicator').classList.add('active');
-    
-    try {
-        for (let i = 1; i <= CONFIG.PRELOAD_AHEAD; i++) {
-            const nextIndex = state.currentIndex + i;
-            if (nextIndex >= state.allVideos.length) break;
-            
-            const nextVideo = state.allVideos[nextIndex];
-            const urls = genererURLsFallback(nextVideo.video);
-            const firstUrl = urls[0]?.url;
-            
-            if (!firstUrl) continue;
-            
-            // Vérifier si déjà en cache
-            if (await VideoCache.isCached(firstUrl)) {
-                console.log(`[Preload] Vidéo ${nextIndex} déjà en cache`);
-                continue;
-            }
-            
-            // Précharger
-            console.log(`[Preload] Préchargement vidéo ${nextIndex}: ${nextVideo.titre}`);
-            try {
-                const response = await fetch(firstUrl, { mode: 'no-cors' });
-                await VideoCache.addToCache(firstUrl, response);
-            } catch (e) {
-                console.warn(`[Preload] Échec préchargement ${nextIndex}:`, e);
-            }
-        }
-    } finally {
-        state.preloading = false;
-        $('preloadIndicator').classList.remove('active');
-    }
-}
-
-/* ============================================================
-   CACHE INDEXEDDB (vignettes + métadonnées)
-   ============================================================ */
+/* ---------- IndexedDB (vignettes + méta) ---------- */
 const Cache = (() => {
     let dbp = null;
     function open() {
@@ -899,9 +619,6 @@ const Cache = (() => {
     return { get, set, clear, count };
 })();
 
-/* ============================================================
-   PROGRESSION
-   ============================================================ */
 function getProgress(url) {
     const raw = localStorage.getItem('progress_' + url);
     if (!raw) return null;
@@ -917,9 +634,6 @@ function progressPercent(url) {
     return Math.min(100, Math.round((p.t / p.d) * 100));
 }
 
-/* ============================================================
-   THÈME & COULEUR
-   ============================================================ */
 function toggleTheme() {
     const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', next);
@@ -946,17 +660,9 @@ function changeColor(color, el) {
     }
 })();
 
-/* ============================================================
-   PARAMÈTRES / SAUVEGARDES
-   ============================================================ */
-function openSettings() { 
-    $('settingsModal').classList.add('active'); 
-    majInfoCache(); 
-    majStatsCache(); 
-}
+function openSettings() { $('settingsModal').classList.add('active'); majInfoCache(); }
 function closeSettings() { $('settingsModal').classList.remove('active'); }
 $('settingsModal').addEventListener('click', e => { if (e.target.id === 'settingsModal') closeSettings(); });
-
 function toggleAutoThumb(on) {
     state.autoThumb = on;
     localStorage.setItem('autoThumb', on ? '1' : '0');
@@ -964,7 +670,7 @@ function toggleAutoThumb(on) {
 }
 async function majInfoCache() {
     const n = await Cache.count('thumbs');
-    $('thumbCacheInfo').textContent = `Cache : ${n} vignette(s) en mémoire locale (stockage persistant demandé)`;
+    $('thumbCacheInfo').textContent = `Cache : ${n} vignette(s) en mémoire locale`;
 }
 async function viderCacheVignettes() {
     await Cache.clear('thumbs');
@@ -977,11 +683,7 @@ function exportData() {
         favorites: state.favorites,
         stats: JSON.parse(localStorage.getItem('viewingStats') || '{}'),
         progress: {}, notes: {},
-        radio: {
-            custom: Radio.custom,
-            current: Radio.current,
-            volumes: { radio: $('radioVolume').value, mix: $('videoMixVolume').value }
-        }
+        radio: { custom: Radio.custom, current: Radio.current, volumes: { radio: $('radioVolume').value, mix: $('videoMixVolume').value } }
     };
     for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -1015,43 +717,34 @@ function importData(e) {
     e.target.value = '';
 }
 function resetAllData() {
-    if (!confirm('⚠️ Effacer TOUTES les données (favoris, progression, notes, stats, radio, cache vidéo) ?')) return;
+    if (!confirm('⚠️ Effacer TOUTES les données (favoris, progression, notes, stats, radio) ?')) return;
     localStorage.clear();
     Cache.clear('thumbs'); Cache.clear('meta');
-    VideoCache.clearAll();
     showToast('🗑️ Données effacées');
     setTimeout(() => location.reload(), 600);
 }
 
-/* ============================================================
-   📻 MODULE RADIO
-   ============================================================ */
 const Radio = {
     stations: [
-        { nom: 'ibizasonica',     url: 'https://ibizasonica.streaming-pro.com:8000/ibizasonica',       genre: 'Généraliste' },
-        { nom: 'Ibiza Global',       url: 'http://ibizaglobalradio.streaming-pro.com:8024/',        genre: 'Info' },
-        { nom: 'Pure Ibiza',        url: 'http://control.streaming-pro.com:8024/stream.aac',               genre: 'Éclectique' },
-        { nom: 'ROCK FM Guns N rose',   url: 'http://streams.regenbogen.de/rr-gunsnroses-128-mp3',     genre: 'Classique' },
-        { nom: 'Guns N Roses',         url: 'https://stream02.pcradio.biz/guns_n_roses-hi',         genre: 'Jazz' }
+        { nom: 'ibizasonica', url: 'https://ibizasonica.streaming-pro.com:8000/ibizasonica', genre: 'Généraliste' },
+        { nom: 'Ibiza Global', url: 'http://ibizaglobalradio.streaming-pro.com:8024/', genre: 'Info' },
+        { nom: 'Pure Ibiza', url: 'http://control.streaming-pro.com:8024/stream.aac', genre: 'Éclectique' },
+        { nom: 'ROCK FM Guns N rose', url: 'http://streams.regenbogen.de/rr-gunsnroses-128-mp3', genre: 'Classique' },
+        { nom: 'Guns N Roses', url: 'https://stream02.pcradio.biz/guns_n_roses-hi', genre: 'Jazz' }
     ],
     custom: JSON.parse(localStorage.getItem('radioCustom') || '[]'),
     current: JSON.parse(localStorage.getItem('radioCurrent') || 'null'),
-    on: false,
-    sleepTimeout: null,
-    prevVideoVolume: 1
+    on: false, sleepTimeout: null, prevVideoVolume: 1
 };
-
 function toggleRadioPanel() {
     const p = $('radioPanel');
     p.classList.toggle('open');
     if (p.classList.contains('open')) renderStations();
 }
-
 function renderStations() {
     const box = $('radioStations');
     box.innerHTML = '';
-    const all = [...Radio.stations, ...Radio.custom];
-    all.forEach((s, i) => {
+    [...Radio.stations, ...Radio.custom].forEach((s, i) => {
         const chip = document.createElement('button');
         chip.className = 'station-chip' + (Radio.current?.url === s.url ? ' active' : '');
         const name = document.createElement('span');
@@ -1065,14 +758,12 @@ function renderStations() {
             const del = document.createElement('span');
             del.className = 'station-del';
             del.textContent = '✕';
-            del.title = 'Retirer cette station';
             del.addEventListener('click', e => { e.stopPropagation(); removeCustomStation(i - Radio.stations.length); });
             chip.appendChild(del);
         }
         box.appendChild(chip);
     });
 }
-
 function selectStation(station) {
     Radio.current = station;
     localStorage.setItem('radioCurrent', JSON.stringify(station));
@@ -1080,7 +771,6 @@ function selectStation(station) {
     renderStations();
     startRadio();
 }
-
 async function startRadio() {
     const player = $('radioPlayer');
     if (!Radio.current) { showToast('⚠️ Choisissez une station'); return; }
@@ -1089,32 +779,20 @@ async function startRadio() {
     $('radioNow').textContent = '⏳ Connexion à ' + Radio.current.nom + '…';
     try {
         await player.play();
-        Radio.on = true;
-        activerModeRadio();
-        majRadioUI();
+        Radio.on = true; activerModeRadio(); majRadioUI();
         showToast(`📻 ${Radio.current.nom} — vidéo en sourdine`);
-    } catch {
-        Radio.on = false;
-        majRadioUI();
-        showToast('❌ Impossible de lire cette station');
-    }
+    } catch { Radio.on = false; majRadioUI(); showToast('❌ Impossible de lire cette station'); }
 }
-
 function stopRadio(silent) {
     const player = $('radioPlayer');
-    player.pause();
-    player.removeAttribute('src');
-    player.load();
-    Radio.on = false;
-    desactiverModeRadio();
+    player.pause(); player.removeAttribute('src'); player.load();
+    Radio.on = false; desactiverModeRadio();
     clearTimeout(Radio.sleepTimeout);
     $('sleepTimer').value = '0';
     majRadioUI();
     if (!silent) showToast('📻 Radio arrêtée — son vidéo restauré');
 }
-
 function toggleRadio() { Radio.on ? stopRadio() : startRadio(); }
-
 function activerModeRadio() {
     Radio.prevVideoVolume = video.volume;
     video.volume = $('videoMixVolume').value / 100;
@@ -1125,11 +803,8 @@ function desactiverModeRadio() {
     localStorage.setItem('radioMode', '0');
 }
 function appliquerMixRadio() {
-    if (localStorage.getItem('radioMode') === '1') {
-        video.volume = ($('videoMixVolume').value || 0) / 100;
-    }
+    if (localStorage.getItem('radioMode') === '1') video.volume = ($('videoMixVolume').value || 0) / 100;
 }
-
 function majRadioUI() {
     $('radioBtn').classList.toggle('radio-active', Radio.on);
     $('radioPower').textContent = Radio.on ? '⏸ Arrêter' : '▶ Écouter';
@@ -1137,11 +812,7 @@ function majRadioUI() {
     if (!Radio.on && Radio.current) $('radioNow').textContent = '⏸ ' + Radio.current.nom + ' (en pause)';
     if (!Radio.on && !Radio.current) $('radioNow').textContent = 'Choisissez une station';
 }
-
-function setRadioVolume(v) {
-    $('radioPlayer').volume = v / 100;
-    localStorage.setItem('radioVolume', v);
-}
+function setRadioVolume(v) { $('radioPlayer').volume = v / 100; localStorage.setItem('radioVolume', v); }
 function setVideoMixVolume(v) {
     localStorage.setItem('videoMixVolume', v);
     if (localStorage.getItem('radioMode') === '1') video.volume = v / 100;
@@ -1150,13 +821,9 @@ function setSleepTimer(min) {
     clearTimeout(Radio.sleepTimeout);
     min = parseInt(min);
     if (!min) return;
-    Radio.sleepTimeout = setTimeout(() => {
-        stopRadio(true);
-        showToast('😴 Radio arrêtée (minuteur)');
-    }, min * 60000);
+    Radio.sleepTimeout = setTimeout(() => { stopRadio(true); showToast('😴 Radio arrêtée (minuteur)'); }, min * 60000);
     showToast(`😴 La radio s'arrêtera dans ${min} min`);
 }
-
 function playCustomStation() {
     const input = $('radioCustomUrl');
     const url = input.value.trim();
@@ -1180,10 +847,9 @@ function removeCustomStation(i) {
     renderStations();
     showToast('🗑️ Station retirée');
 }
-
 function initRadio() {
-    const rv = localStorage.getItem('radioVolume');    if (rv) $('radioVolume').value = rv;
-    const mv = localStorage.getItem('videoMixVolume');  if (mv) $('videoMixVolume').value = mv;
+    const rv = localStorage.getItem('radioVolume'); if (rv) $('radioVolume').value = rv;
+    const mv = localStorage.getItem('videoMixVolume'); if (mv) $('videoMixVolume').value = mv;
     $('autoThumbSwitch').checked = state.autoThumb;
     if (Radio.current) $('radioNow').textContent = '⏸ ' + Radio.current.nom;
     renderStations();
@@ -1194,14 +860,9 @@ function initRadio() {
     const player = $('radioPlayer');
     player.addEventListener('playing', () => { if (Radio.current) $('radioNow').textContent = '📻 ' + Radio.current.nom; });
     player.addEventListener('stalled', () => { if (Radio.on) $('radioNow').textContent = '⏳ Reconnexion…'; });
-    player.addEventListener('error', () => {
-        if (Radio.on) { showToast('❌ Flux radio interrompu'); stopRadio(true); }
-    });
+    player.addEventListener('error', () => { if (Radio.on) { showToast('❌ Flux radio interrompu'); stopRadio(true); } });
 }
 
-/* ============================================================
-   RECHERCHE VOCALE
-   ============================================================ */
 function startVoiceSearch() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { showToast('❌ Recherche vocale non supportée'); return; }
@@ -1219,12 +880,7 @@ function startVoiceSearch() {
     try { rec.start(); } catch { btn.classList.remove('listening'); }
 }
 
-/* ============================================================
-   STATISTIQUES
-   ============================================================ */
-function lireStats() {
-    return JSON.parse(localStorage.getItem('viewingStats') || '{"totalTime":0,"videosWatched":0,"dailyStats":{}}');
-}
+function lireStats() { return JSON.parse(localStorage.getItem('viewingStats') || '{"totalTime":0,"videosWatched":0,"dailyStats":{}}'); }
 function flushStats() {
     if (state.watchedSeconds < 1) return;
     const s = lireStats();
@@ -1255,9 +911,6 @@ function showStats() {
         (top ? `\n🔥 Meilleur jour : ${top[0]} (${Math.round(top[1] / 60)} min)` : ''));
 }
 
-/* ============================================================
-   FAVORIS
-   ============================================================ */
 function toggleFavorite(url, ev) {
     if (ev) ev.stopPropagation();
     const i = state.favorites.indexOf(url);
@@ -1274,9 +927,6 @@ function toggleFavorite(url, ev) {
     if (state.filter === 'favorites') renderGrid();
 }
 
-/* ============================================================
-   MÉTADONNÉES ARCHIVE.ORG
-   ============================================================ */
 function choisirFichierVideo(files) {
     const mp4 = files.filter(f => f.name && /\.mp4$/i.test(f.name));
     if (!mp4.length) return null;
@@ -1291,7 +941,6 @@ function choisirFichierVideo(files) {
     mp4.sort((a, b) => (score(b) - score(a)) || ((parseInt(b.size) || 0) - (parseInt(a.size) || 0)));
     return mp4[0];
 }
-
 function choisirVignette(files, identifier, videoName) {
     const base = videoName.replace(/\.[^.]+$/, '');
     const isImg = f => /\.(png|jpe?g)$/i.test(f.name || '');
@@ -1309,7 +958,6 @@ function choisirVignette(files, identifier, videoName) {
         return { url: fileUrl(identifier, '__ia_thumb.jpg'), kind: 'item' };
     return { url: `https://archive.org/services/img/${encodeURIComponent(identifier)}`, kind: 'item' };
 }
-
 async function fetchMeta(identifier) {
     const cached = await Cache.get('meta', identifier);
     if (cached && Date.now() - cached.ts < CONFIG.META_TTL) return cached.data;
@@ -1319,12 +967,10 @@ async function fetchMeta(identifier) {
     await Cache.set('meta', identifier, { ts: Date.now(), data });
     return data;
 }
-
 function extraireIdentifier(url) {
     const m = String(url).match(/\/(?:items|download|embed|details)\/([^/?#]+)/i);
     return m ? decodeURIComponent(m[1]) : null;
 }
-
 async function chargerToutesLesVideos() {
     const combined = [];
     try {
@@ -1346,7 +992,6 @@ async function chargerToutesLesVideos() {
             });
         }
     } catch {}
-
     try {
         const api = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(`uploader:"${CONFIG.ARCHIVE_USERNAME}" AND mediatype:(movies)`)}&fl[]=identifier&fl[]=title&fl[]=publicdate&sort[]=-publicdate&output=json&rows=${CONFIG.MAX_VIDEOS}`;
         const r = await fetch(api);
@@ -1362,50 +1007,34 @@ async function chargerToutesLesVideos() {
                 return {
                     titre: doc.title || meta.metadata?.title || doc.identifier,
                     video: fileUrl(doc.identifier, f.name),
-                    vignette: th.url,
-                    thumbKind: th.kind,
-                    identifier: doc.identifier,
-                    fileName: f.name,
-                    duration: parseFloat(f.length) || 0,
-                    source: 'archive',
-                    date: doc.publicdate
+                    vignette: th.url, thumbKind: th.kind, identifier: doc.identifier,
+                    fileName: f.name, duration: parseFloat(f.length) || 0,
+                    source: 'archive', date: doc.publicdate
                 };
             } catch { return null; }
         });
         results.filter(Boolean).forEach(v => combined.push(v));
     } catch (e) { console.warn('Archive.org indisponible :', e); }
-
     const map = new Map();
     combined.forEach(v => { if (!map.has(v.video)) map.set(v.video, v); });
     state.allVideos = [...map.values()].sort((a, b) => {
         if (a.date && b.date) return new Date(b.date) - new Date(a.date);
         return 0;
     });
-
     if (!state.allVideos.length) {
         $('videoGrid').innerHTML = '<div class="error-state">❌ Aucune vidéo trouvée.<br><small>Vérifiez le nom d\'utilisateur Archive.org ou votre fichier videos.json</small></div>';
         $('mainTitle').textContent = 'Bibliothèque vide';
         return;
     }
-
     renderGrid();
     genererContinueWatching();
     afficherStats();
-    majStatsCache();
-
-    if (new URLSearchParams(location.search).get('v')) {
-        chargerVideoDepuisURL();
-    } else {
-        restaurerSession();
-    }
+    if (new URLSearchParams(location.search).get('v')) chargerVideoDepuisURL();
+    else restaurerSession();
 }
 
-/* ============================================================
-   CAPTURE DE VIGNETTE
-   ============================================================ */
 const thumbQueue = [];
 let thumbRunning = 0;
-
 function enqueueThumb(videoObj, imgEl, flagEl) {
     if (videoObj.thumbKind === 'custom' || videoObj.skipAutoThumb) return;
     if (!state.autoThumb) return;
@@ -1443,7 +1072,6 @@ function pumpThumbQueue() {
         })();
     }
 }
-
 function captureFrame(url, knownDuration) {
     return new Promise(resolve => {
         const v = document.createElement('video');
@@ -1492,9 +1120,6 @@ function captureFrame(url, knownDuration) {
     });
 }
 
-/* ============================================================
-   RENDU DE LA GRILLE
-   ============================================================ */
 const lazyObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
         if (!entry.isIntersecting) return;
@@ -1504,7 +1129,6 @@ const lazyObserver = new IntersectionObserver(entries => {
         const v = state.allVideos[idx];
         if (!v) return;
         const flag = img.parentElement.querySelector('.thumb-flag');
-
         if (v.thumbKind === 'custom' && v.vignette) {
             img.src = v.vignette;
             img.addEventListener('error', () => {
@@ -1514,7 +1138,6 @@ const lazyObserver = new IntersectionObserver(entries => {
             }, { once: true });
             return;
         }
-
         if (img.dataset.pending === '1') img.src = v.vignette;
         img.addEventListener('error', async () => {
             if (img.dataset.failed === '1') return;
@@ -1540,14 +1163,12 @@ function computeVisible() {
     if (state.query) list = list.filter(v => v.titre.toLowerCase().includes(state.query));
     return list;
 }
-
 function renderGrid() {
     const grid = $('videoGrid');
     state.visible = computeVisible();
     grid.innerHTML = '';
     $('libraryCount').textContent = `📁 Bibliothèque — ${state.visible.length} / ${state.allVideos.length}`;
     if (!state.visible.length) { grid.innerHTML = '<div class="empty-state">Aucun résultat.</div>'; return; }
-
     const frag = document.createDocumentFragment();
     state.visible.forEach(v => {
         const index = state.allVideos.indexOf(v);
@@ -1565,7 +1186,6 @@ function renderGrid() {
         img.dataset.index = index;
         img.src = placeholderFor(v.titre);
         if (v.vignette) img.dataset.pending = '1';
-
         const flag = document.createElement('span');
         flag.className = 'thumb-flag';
         let flagText = '🖼️ item';
@@ -1573,7 +1193,6 @@ function renderGrid() {
         else if (v.thumbKind === 'file') flagText = '🖼️ fichier';
         else if (v.thumbKind === 'auto') flagText = '🖼️ auto';
         flag.textContent = flagText;
-
         const fav = document.createElement('button');
         fav.className = 'fav-btn' + (isFav ? ' is-fav' : '');
         fav.dataset.url = v.video;
@@ -1604,7 +1223,6 @@ function renderGrid() {
     });
     grid.appendChild(frag);
 }
-
 function updateActiveStates() {
     document.querySelectorAll('.video-item').forEach(el => {
         el.classList.toggle('active', +el.dataset.index === state.currentIndex);
@@ -1645,9 +1263,6 @@ function genererContinueWatching() {
     section.classList.toggle('visible', items.length > 0);
 }
 
-/* ============================================================
-   LECTURE
-   ============================================================ */
 function jouerVideo(index, options = {}) {
     if (index < 0 || index >= state.allVideos.length) return;
     flushStats();
@@ -1655,7 +1270,6 @@ function jouerVideo(index, options = {}) {
     state.ready = false;
     state.abLoop = { a: null, b: null, active: false };
     state.retryCount = 0;
-
     const v = state.allVideos[index];
     const resume = options.startTime ?? (getProgress(v.video)?.t || 0);
     $('mainTitle').textContent = v.titre;
@@ -1676,20 +1290,15 @@ function jouerVideo(index, options = {}) {
         video.playbackRate = state.speeds[state.speedIndex];
         appliquerMixRadio();
         state.ready = true;
-        masquerChargement();
-        if (!Cast.isCasting) video.play().catch(() => {});
+        attendreBufferAvantLecture().then(() => {
+            if (!Cast.isCasting) video.play().catch(() => {});
+        });
     };
-
-    const onPlay = () => { masquerChargement(); };
-
     video.addEventListener('loadedmetadata', onMeta, { once: true });
-    video.addEventListener('play', onPlay, { once: true });
 
     const urls = genererURLsFallback(v.video);
-    chargerVideoAvecRetry(urls, 0, true).then(success => {
-        if (!success && !state.ready) {
-            $('mainTitle').textContent = '❌ Impossible de charger la vidéo';
-        }
+    chargerVideoAvecRetry(urls).then(success => {
+        if (!success && !state.ready) $('mainTitle').textContent = '❌ Impossible de charger la vidéo';
     });
 
     localStorage.setItem('lastVideoUrl', v.video);
@@ -1703,8 +1312,6 @@ function jouerVideo(index, options = {}) {
 
 function setupVideoEvents() {
     let saveTimer = 0;
-    let preloadTriggered = false;
-    
     video.addEventListener('timeupdate', () => {
         if (!state.ready || state.currentIndex < 0) return;
         const v = state.allVideos[state.currentIndex];
@@ -1723,19 +1330,11 @@ function setupVideoEvents() {
             const bar = document.querySelector(`.video-item[data-index="${state.currentIndex}"] .progress-bar`);
             if (bar && video.duration) bar.style.width = Math.min(100, (now / video.duration) * 100) + '%';
         }
-        
-        // ⭐ Déclencher le préchargement à 80% de la vidéo
-        const progressPercent = video.duration ? (now / video.duration) * 100 : 0;
-        if (progressPercent >= CONFIG.PRELOAD_TRIGGER_PERCENT && !preloadTriggered) {
-            preloadTriggered = true;
-            prechargerVideosSuivantes();
-        }
     });
-    
-    video.addEventListener('loadedmetadata', () => {
-        preloadTriggered = false;
+    video.addEventListener('waiting', () => {
+        if (state.ready) afficherTampon(bufferedAhead(), bufferedAhead() + 10);
     });
-    
+    video.addEventListener('playing', () => masquerChargement());
     video.addEventListener('pause', () => {
         if (state.currentIndex >= 0 && state.ready) {
             const v = state.allVideos[state.currentIndex];
@@ -1751,21 +1350,16 @@ function setupVideoEvents() {
         compterVideoVue();
         genererContinueWatching();
         renderGrid();
-        
-        // ⭐ Nettoyage du cache si nécessaire
-        VideoCache.cleanup();
-        
         if (state.currentIndex < state.allVideos.length - 1) {
             showToast('⏭️ Vidéo suivante…');
             setTimeout(() => jouerVideo(state.currentIndex + 1), 1200);
         }
     });
     video.addEventListener('play', requestWakeLock);
-
     video.addEventListener('error', () => {
         const err = video.error;
         if (!err || err.code === MediaError.MEDIA_ERR_ABORTED) return;
-        console.log('[Rainbow] Erreur vidéo détectée, retry géré par chargerVideoAvecRetry...');
+        console.log('[Rainbow] Erreur vidéo, retry géré par chargerVideoAvecRetry');
     });
 }
 
@@ -1778,10 +1372,8 @@ function restaurerSession() {
     const v = state.allVideos[i];
     $('mainTitle').textContent = v.titre;
     video.poster = v.vignette || placeholderFor(v.titre);
-
     if (v.vignette) { $('ambilightBg').style.backgroundImage = `url("${v.vignette}")`; $('ambilightBg').classList.add('active'); }
     const p = getProgress(v.video);
-
     const onMeta = () => {
         if (p && p.t > 5 && p.t < video.duration - 3) {
             video.currentTime = p.t;
@@ -1792,12 +1384,9 @@ function restaurerSession() {
         state.ready = true;
         masquerChargement();
     };
-
     video.addEventListener('loadedmetadata', onMeta, { once: true });
-
     const urls = genererURLsFallback(v.video);
-    chargerVideoAvecRetry(urls, 0, false); // Ne pas mettre en cache pour les sessions restaurées
-
+    chargerVideoAvecRetry(urls);
     updateActiveStates();
     updateMediaSession();
     displayNotes();
@@ -1841,13 +1430,8 @@ const playerObserver = new IntersectionObserver(entries => {
     else p.classList.remove('mini-player');
 }, { threshold: 0.1 });
 
-/* ============================================================
-   CASTING
-   ============================================================ */
 const Cast = {
-    isCasting: false,
-    ctx: null,
-    sdkLoading: false,
+    isCasting: false, ctx: null, sdkLoading: false,
     init() {
         if (!window.cast?.framework) return;
         this.ctx = cast.framework.CastContext.getInstance();
@@ -1885,11 +1469,250 @@ const Cast = {
         const req = new chrome.cast.media.LoadRequest(info);
         req.currentTime = time || 0;
         req.autoplay = autoplay !== false;
-        session.loadMedia(req).then(() => {
-            video.pause();
-            showToast('📺 Diffusion sur le téléviseur');
-        }).catch(err => showToast('❌ Erreur cast : ' + (err.code || err)));
+        session.loadMedia(req).then(() => { video.pause(); showToast('📺 Diffusion sur le téléviseur'); })
+            .catch(err => showToast('❌ Erreur cast : ' + (err.code || err)));
     },
     loadSdk() {
         if (this.sdkLoading || window.cast?.framework) return;
-        this
+        this.sdkLoading = true;
+        showToast('⏳ Chargement du module Chromecast…');
+        const s = document.createElement('script');
+        s.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
+        s.async = true;
+        s.onerror = () => { this.sdkLoading = false; showToast('❌ Module Cast indisponible'); };
+        document.head.appendChild(s);
+    }
+};
+window.__onGCastApiAvailable = isAvailable => { if (isAvailable) { Cast.init(); showToast('📺 Chromecast prêt'); } };
+async function casterVideo() {
+    if (state.currentIndex === -1 && !video.src) { showToast('⚠️ Lancez d\'abord une vidéo'); return; }
+    const url = state.allVideos[state.currentIndex]?.video || video.src;
+    if (Cast.isCasting) { Cast.load(url, video.currentTime, true); return; }
+    if (typeof video.webkitShowPlaybackTargetPicker === 'function') {
+        try { video.webkitShowPlaybackTargetPicker(); return; } catch {}
+    }
+    if (video.remote && typeof video.remote.prompt === 'function') {
+        try { await video.remote.prompt(); return; } catch {}
+    }
+    if (location.protocol === 'file:') {
+        showToast('⚠️ Chromecast nécessite http(s) — ouvrez via un serveur local', 5000);
+        return;
+    }
+    if (Cast.ctx) {
+        try { await Cast.ctx.requestSession(); return; }
+        catch { showToast('📺 Aucun appareil sélectionné'); return; }
+    }
+    if (!window.chrome && !navigator.userAgent.includes('Edg/')) {
+        showToast('💡 Utilisez Chrome/Edge pour Chromecast, Safari pour AirPlay', 4500);
+        window.open(url, '_blank', 'noopener');
+        return;
+    }
+    Cast.loadSdk();
+    setTimeout(() => {
+        if (Cast.ctx) Cast.ctx.requestSession().catch(() => showToast('📺 Aucun Chromecast détecté'));
+        else showToast('❌ Cast indisponible sur ce réseau');
+    }, 2500);
+}
+
+function contextAction(action) {
+    $('contextMenu').style.display = 'none';
+    const v = state.contextTarget;
+    if (!v) return;
+    const idx = state.allVideos.indexOf(v);
+    if (action === 'play') jouerVideo(idx);
+    else if (action === 'fav') toggleFavorite(v.video, null);
+    else if (action === 'copy') navigator.clipboard?.writeText(v.video).then(() => showToast('🔗 Lien copié !'));
+    else if (action === 'cast') { jouerVideo(idx); setTimeout(casterVideo, 800); }
+    else if (action === 'thumb') regenThumb(v);
+}
+async function regenThumb(v) {
+    if (v.thumbKind === 'custom') { showToast('🎨 Vignette personnalisée depuis le JSON (non régénérable)'); return; }
+    showToast('🖼️ Régénération en cours…');
+    await Cache.set('thumbs', v.video, null);
+    const data = await captureFrame(v.video, v.duration);
+    if (!data) { showToast('❌ Capture impossible (CORS ou fichier)'); return; }
+    await Cache.set('thumbs', v.video, data);
+    v.vignette = data; v.thumbKind = 'auto';
+    const img = document.querySelector(`.video-item[data-index="${state.allVideos.indexOf(v)}"] img`);
+    if (img) img.src = data;
+    showToast('✅ Vignette régénérée');
+}
+document.addEventListener('click', e => {
+    if (!e.target.closest('.custom-context-menu')) $('contextMenu').style.display = 'none';
+});
+
+function toggleABLoop(point) {
+    if (point === 'a') {
+        state.abLoop.a = video.currentTime;
+        state.abLoop.active = false;
+        showToast(`🔵 Point A : ${formatTime(state.abLoop.a)}`);
+    } else {
+        if (state.abLoop.a === null) { showToast('⚠️ Définissez d\'abord le point A'); return; }
+        if (video.currentTime <= state.abLoop.a) { showToast('⚠️ B doit être après A'); return; }
+        state.abLoop.b = video.currentTime;
+        state.abLoop.active = true;
+        showToast(`🔴 Point B : ${formatTime(state.abLoop.b)} — boucle ON`);
+    }
+}
+function notesKey() { return state.currentIndex >= 0 ? 'notes_' + state.allVideos[state.currentIndex].video : null; }
+function addNote() {
+    const key = notesKey();
+    if (!key) { showToast('⚠️ Lancez une vidéo'); return; }
+    const time = video.currentTime;
+    const text = prompt(`Note à ${formatTime(time)} :`);
+    if (!text) return;
+    const notes = JSON.parse(localStorage.getItem(key) || '[]');
+    notes.push({ time, text, date: new Date().toISOString() });
+    notes.sort((a, b) => a.time - b.time);
+    localStorage.setItem(key, JSON.stringify(notes));
+    showToast('📝 Note ajoutée');
+    displayNotes();
+}
+function deleteNote(i, ev) {
+    ev.stopPropagation();
+    const key = notesKey(); if (!key) return;
+    const notes = JSON.parse(localStorage.getItem(key) || '[]');
+    notes.splice(i, 1);
+    localStorage.setItem(key, JSON.stringify(notes));
+    displayNotes();
+}
+function displayNotes() {
+    const key = notesKey();
+    const list = $('notesList');
+    if (!key) { list.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem">Aucune vidéo en cours.</p>'; return; }
+    const notes = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!notes.length) { list.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem">Aucune note pour ce titre.</p>'; return; }
+    list.innerHTML = notes.map((n, i) =>
+        `<div class="note-item" onclick="seekTo(${n.time})">
+            <button class="note-del" onclick="deleteNote(${i},event)">✕</button>
+            <div class="note-time">${formatTime(n.time)}</div>
+            <div class="note-text">${escapeHtml(n.text)}</div>
+        </div>`).join('');
+}
+function seekTo(t) { video.currentTime = t; video.play().catch(() => {}); }
+function toggleNotesPanel() { $('notesPanel').classList.toggle('open'); displayNotes(); }
+
+function updateMediaSession() {
+    if (!('mediaSession' in navigator) || state.currentIndex < 0) return;
+    const v = state.allVideos[state.currentIndex];
+    const art = /^https?:/.test(v.vignette || '') ? [{ src: v.vignette, sizes: '512x512', type: 'image/jpeg' }] : [];
+    navigator.mediaSession.metadata = new MediaMetadata({ title: v.titre, artist: 'Rainbow Cinema', artwork: art });
+}
+if ('mediaSession' in navigator) {
+    const h = {
+        play: () => video.play(), pause: () => video.pause(),
+        seekbackward: () => video.currentTime -= 10,
+        seekforward: () => video.currentTime += 10,
+        previoustrack: () => state.currentIndex > 0 && jouerVideo(state.currentIndex - 1),
+        nexttrack: () => state.currentIndex < state.allVideos.length - 1 && jouerVideo(state.currentIndex + 1)
+    };
+    Object.entries(h).forEach(([k, fn]) => { try { navigator.mediaSession.setActionHandler(k, fn); } catch {} });
+}
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator && !state.wakeLock) {
+            state.wakeLock = await navigator.wakeLock.request('screen');
+            state.wakeLock.addEventListener('release', () => { state.wakeLock = null; });
+        }
+    } catch {}
+}
+function releaseWakeLock() { try { state.wakeLock?.release(); } catch {} state.wakeLock = null; }
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) flushStats();
+    else if (!video.paused) requestWakeLock();
+});
+window.addEventListener('beforeunload', flushStats);
+
+document.addEventListener('keydown', e => {
+    const inInput = document.activeElement === $('searchInput') || document.activeElement === $('radioCustomUrl');
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('searchInput').focus(); return; }
+    if (inInput) { if (e.key === 'Escape') document.activeElement.blur(); return; }
+    if (e.key === 'Escape') { closeSettings(); $('notesPanel').classList.remove('open'); $('contextMenu').style.display = 'none'; return; }
+    if (e.ctrlKey || e.metaKey) return;
+    if (e.altKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const items = [...document.querySelectorAll('.video-item')];
+        if (!items.length) return;
+        const cols = Math.max(1, Math.round($('videoGrid').offsetWidth / items[0].offsetWidth));
+        if (state.focusIndex === -1) state.focusIndex = 0;
+        else {
+            if (e.key === 'ArrowRight') state.focusIndex = Math.min(state.focusIndex + 1, items.length - 1);
+            if (e.key === 'ArrowLeft') state.focusIndex = Math.max(state.focusIndex - 1, 0);
+            if (e.key === 'ArrowDown') state.focusIndex = Math.min(state.focusIndex + cols, items.length - 1);
+            if (e.key === 'ArrowUp') state.focusIndex = Math.max(state.focusIndex - cols, 0);
+        }
+        items.forEach(i => i.classList.remove('focused'));
+        items[state.focusIndex].classList.add('focused');
+        items[state.focusIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+    switch (e.code) {
+        case 'Space': e.preventDefault(); video.paused ? video.play() : video.pause(); break;
+        case 'Enter': if (state.focusIndex >= 0) { const el = document.querySelectorAll('.video-item')[state.focusIndex]; if (el) jouerVideo(+el.dataset.index); } break;
+        case 'KeyF': e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : video.requestFullscreen?.(); break;
+        case 'KeyC': e.preventDefault(); toggleCinemaMode(); break;
+        case 'KeyK': e.preventDefault(); casterVideo(); break;
+        case 'KeyP': e.preventDefault(); toggleRadio(); break;
+        case 'KeyM': e.preventDefault(); video.muted = !video.muted; showToast(video.muted ? '🔇 Muet' : '🔊 Son'); break;
+        case 'KeyN': e.preventDefault(); toggleNotesPanel(); break;
+        case 'KeyR': e.preventDefault(); jouerVideoAleatoire(); break;
+        case 'ArrowRight': e.preventDefault(); video.currentTime = Math.min(video.duration || 0, video.currentTime + 10); break;
+        case 'ArrowLeft': e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 10); break;
+        case 'ArrowUp': e.preventDefault(); video.volume = Math.min(1, video.volume + 0.1); showToast(`🔊 Vidéo ${Math.round(video.volume * 100)}%`, 900); break;
+        case 'ArrowDown': e.preventDefault(); video.volume = Math.max(0, video.volume - 0.1); showToast(`🔉 Vidéo ${Math.round(video.volume * 100)}%`, 900); break;
+        case 'KeyS':
+            e.preventDefault();
+            state.speedIndex = (state.speedIndex + 1) % state.speeds.length;
+            video.playbackRate = state.speeds[state.speedIndex];
+            showToast(`⏩ ${state.speeds[state.speedIndex]}x`);
+            break;
+        case 'KeyL':
+            e.preventDefault();
+            if (state.abLoop.a === null) toggleABLoop('a');
+            else if (state.abLoop.b === null) toggleABLoop('b');
+            else { state.abLoop = { a: null, b: null, active: false }; showToast('🔁 Boucle désactivée'); }
+            break;
+    }
+});
+
+$('searchInput').addEventListener('input', debounce(e => {
+    state.query = e.target.value.trim().toLowerCase();
+    renderGrid();
+}, 200));
+
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+    e.preventDefault();
+    for (const file of e.dataTransfer.files) {
+        if (!file.type.startsWith('video/')) continue;
+        state.currentIndex = -1;
+        state.ready = true;
+        masquerChargement();
+        video.src = URL.createObjectURL(file);
+        appliquerMixRadio();
+        video.play().catch(() => {});
+        $('mainTitle').textContent = file.name;
+        showToast(`📂 Lecture locale : ${file.name}`);
+        break;
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (navigator.storage?.persist) navigator.storage.persist().then(ok => console.log('💾 Stockage persistant accordé :', ok));
+    setupVideoEvents();
+    initRadio();
+    afficherStats();
+    chargerToutesLesVideos();
+    setInterval(flushStats, 20000);
+    setTimeout(() => playerObserver.observe($('mainPlayer')), 1200);
+    if (location.protocol !== 'file:' && (window.chrome || navigator.userAgent.includes('Edg/'))) Cast.loadSdk();
+    setInterval(genererContinueWatching, 60000);
+});
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+</body>
+</html>
