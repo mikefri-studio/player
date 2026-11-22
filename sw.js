@@ -1,24 +1,33 @@
-/* Rainbow Cinema — Service Worker v4 */
-const CACHE_SHELL = 'rainbow-shell-v4';
-const CACHE_IMGS  = 'rainbow-img-v4';
+/* Rainbow Cinema — Service Worker v5 */
+const CACHE_SHELL = 'rainbow-shell-v5';
+const CACHE_IMGS  = 'rainbow-img-v5';
 const PRECACHE = [
   './',
   './index.html',
+  './style.css',
+  './app.js',
+  './videos.json',
   './manifest.webmanifest',
+  './icons/icon-48.png',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './icons/apple-touch-icon.png'
 ];
 
-/* ---------- Installation ---------- */
+/* Installation : PAS de skipWaiting automatique → la page affiche le bandeau « Nouvelle version » */
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_SHELL)
-      .then(c => Promise.allSettled(PRECACHE.map(u => c.add(u)))) // un 404 ne casse plus l'install
-      .then(() => self.skipWaiting())
+      .then(c => Promise.allSettled(PRECACHE.map(u => c.add(u)))) // un 404 ne casse pas l'install
   );
 });
 
-/* ---------- Activation + nettoyage des anciens caches (v3, etc.) ---------- */
+/* Message envoyé par la page quand l'utilisateur clique « Recharger » */
+self.addEventListener('message', e => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+/* Activation + nettoyage des anciens caches (v4, etc.) */
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(ks => Promise.all(
@@ -27,21 +36,20 @@ self.addEventListener('activate', e => {
   );
 });
 
-/* ---------- Limitation de la taille du cache images ---------- */
+/* Limitation de la taille du cache images */
 async function trimCache(cache, max) {
   const keys = await cache.keys();
   if (keys.length <= max) return;
   await Promise.all(keys.slice(0, keys.length - max).map(k => cache.delete(k)));
 }
 
-/* ---------- Stratégies de requêtes ---------- */
+/* Stratégies de requêtes (inchangées) */
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  /* 1) NAVIGATION (pages) : réseau d'abord, repli cache si hors-ligne.
-     → tu récupères tes mises à jour d'index.html sans changer le nom du cache */
+  /* 1) NAVIGATION : réseau d'abord, repli cache si hors-ligne */
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req).then(res => {
@@ -53,9 +61,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  /* 2) MÊME ORIGINE (icônes, videos.json, sw, css...) :
-     cache immédiat + revalidation en arrière-plan (stale-while-revalidate).
-     → videos.json reste frais à la visite suivante, mais dispo hors-ligne */
+  /* 2) MÊME ORIGINE (style.css, app.js, videos.json, icônes…) : stale-while-revalidate */
   if (url.origin === location.origin) {
     e.respondWith(
       caches.match(req).then(hit => {
@@ -72,8 +78,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  /* 3) IMAGES ARCHIVE.ORG (vignettes) : cache d'abord, limité à 400 entrées.
-     → la grille s'affiche instantanément, même en 4G faible ou hors-ligne */
+  /* 3) IMAGES ARCHIVE.ORG : cache d'abord, limité à 400 entrées */
   if (url.hostname.endsWith('archive.org') &&
       (/\.(png|jpe?g|webp)$/i.test(url.pathname) || url.pathname.includes('/services/img/'))) {
     e.respondWith(
@@ -95,8 +100,5 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  /* 4) TOUT LE RESTE (vidéos archive.org, flux radio, proxies CORS) :
-     AUCUNE interception → streaming natif + cache HTTP du navigateur.
-     C'est volontaire : mettre en cache des vidéos de 500 Mo casserait le
-     streaming par plages (Range) et saturait le stockage mobile. */
+  /* 4) TOUT LE RESTE (vidéos, radio, proxies) : aucune interception → streaming Range préservé */
 });
