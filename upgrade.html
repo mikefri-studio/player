@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rainbow Cinema — Générateur de fichiers</title>
+<style>
+:root{--primary:#e50914;--bg:#0f0f0f;--card:#181818;--elev:#252525;--text:#fff;--muted:#aaa;--border:#333}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding:20px;max-width:900px;margin:0 auto}
+h1{font-size:1.4rem;margin-bottom:8px}
+h2{font-size:1rem;margin-bottom:10px}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:16px;line-height:1.5}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px}
+button{background:var(--elev);color:var(--text);border:1px solid var(--border);padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600;font-size:.9rem}
+button:hover{filter:brightness(1.25)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+#status{color:var(--muted);font-size:.9rem;margin-left:auto}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
+#log{background:#000;border-radius:6px;padding:12px;font-size:.8rem;line-height:1.6;white-space:pre-wrap;max-height:300px;overflow-y:auto;font-family:monospace}
+.file-card{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:10px;flex-wrap:wrap}
+.file-name{font-weight:700;flex:1;min-width:200px}
+input[type=file]{color:var(--muted);font-size:.85rem;margin:6px 0}
+ol{margin-left:20px;line-height:1.9;font-size:.9rem}
+code{background:var(--elev);padding:2px 6px;border-radius:4px;font-size:.85em}
+</style>
+</head>
+<body>
+<h1>🎬 Rainbow Cinema — Générateur de fichiers complets</h1>
+<p class="sub">Cet outil télécharge ton code depuis GitHub, ajoute le <b>Picture-in-Picture</b> (touche <code>I</code>) et le <b>bandeau de mise à jour</b>, découpe <code>index.html</code> en 3 fichiers (<code>index.html</code> + <code>style.css</code> + <code>app.js</code>) et met <code>sw.js</code> en v5. <b>Rien n'est modifié en ligne</b> : tu télécharges les fichiers générés, puis tu les uploades sur GitHub. Relançable sans risque (il détecte ce qui est déjà fait).</p>
+
+<div class="bar">
+  <button id="goBtn" class="primary">🚀 Générer les 4 fichiers</button>
+  <button id="dlAllBtn" disabled>⬇️ Tout télécharger</button>
+  <span id="status">Prêt.</span>
+</div>
+
+<div class="card">
+  <h2>📜 Journal</h2>
+  <pre id="log">Clique sur « Générer les 4 fichiers »…</pre>
+  <div id="manualBox" hidden style="margin-top:12px">
+    <p class="sub">Le téléchargement automatique a échoué (réseau/CORS). Charge tes fichiers manuellement :</p>
+    <label>index.html : <input type="file" id="manualIndex" accept=".html"></label><br>
+    <label>sw.js (optionnel) : <input type="file" id="manualSw" accept=".js"></label><br>
+    <button id="manualGo">Générer depuis ces fichiers</button>
+  </div>
+</div>
+
+<div id="files"></div>
+
+<div class="card">
+  <h2>📤 Ensuite (dans l'ordre)</h2>
+  <ol>
+    <li>Sur GitHub : <b>Add file → Upload files</b> → glisse les <b>4 fichiers ensemble</b> → un seul commit (« Découpage + PiP + bandeau MAJ + SW v5 »).</li>
+    <li>Crée aussi <code>admin.html</code>, remplace <code>README.md</code>, et crée <code>.github/workflows/validate.yml</code> (fichiers 2 à 4 du message).</li>
+    <li>Attends ~1 min (déploiement Pages) → ouvre ton site → <code>Ctrl+F5</code>.</li>
+    <li>Teste : touche <code>I</code> (PiP), hors-ligne (F12 → Network → Offline → recharge), et le bandeau apparaîtra à la prochaine mise à jour.</li>
+  </ol>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const BASES = [
+  'https://raw.githubusercontent.com/mikefri-studio/player/main/',
+  'https://mikefri-studio.github.io/player/'
+];
+const outputs = {};
+const manual = { index: null, sw: null };
+function log(m) { $('log').textContent += m + '\n'; }
+function setStatus(m) { $('status').textContent = m; }
+
+const A_ANCHOR = `<button class="btn-action" id="castBtn" onclick="casterVideo()" title="Diffuser sur un écran (K)">📺 Caster</button>`;
+const PIPBUTTON = `
+    <button class="btn-action" id="pipBtn" onclick="togglePiP()" title="Picture-in-Picture (I)">📌 PiP</button>`;
+const B_ANCHOR = `function toggleCinemaMode() {
+    const p = $('mainPlayer');
+    p.classList.toggle('cinema-mode');
+    showToast(p.classList.contains('cinema-mode') ? '🎬 Mode cinéma' : 'Mode normal');
+}`;
+const C_ANCHOR = `        case 'KeyM': e.preventDefault(); video.muted = !video.muted; showToast(video.muted ? '🔇 Muet' : '🔊 Son'); break;`;
+const C_INSERT = `        case 'KeyI': e.preventDefault(); togglePiP(); break;
+`;
+const D_OLD = `if (document.fullscreenElement || Cast.isCasting) { p.classList.remove('mini-player'); return; }`;
+const D_NEW = `if (document.fullscreenElement || document.pictureInPictureElement || Cast.isCasting) { p.classList.remove('mini-player'); return; }`;
+const SW_MARK = `navigator.serviceWorker.register('sw.js')`;
+const SKIP_LINE = `.then(() => self.skipWaiting())`;
+const PIP_BLOCK = `
+
+/* ---------- Picture-in-Picture natif (touche I) ---------- */
+async function togglePiP() {
+    if (!video.src && state.currentIndex === -1) { showToast("⚠️ Lancez d'abord une vidéo"); return; }
+    try {
+        if (document.pictureInPictureElement) { await document.exitPictureInPicture(); return; }
+        if (typeof video.webkitSetPresentationMode === 'function') {
+            video.webkitSetPresentationMode(video.webkitPresentationMode === 'picture-in-picture' ? 'inline' : 'picture-in-picture');
+            return;
+        }
+        if (document.pictureInPictureEnabled) await video.requestPictureInPicture();
+        else showToast('⚠️ PiP non supporté par ce navigateur');
+    } catch (e) { showToast('❌ PiP : ' + e.message); }
+}
+video.addEventListener('enterpictureinpicture', () => { const b = $('pipBtn'); if (b) b.classList.add('btn-primary'); });
+video.addEventListener('leavepictureinpicture', () => { const b = $('pipBtn'); if (b) b.classList.remove('btn-primary'); });
+video.addEventListener('webkitpresentationmodechanged', () => {
+    const b = $('pipBtn');
+    if (b) b.classList.toggle('btn-primary', video.webkitPresentationMode === 'picture-in-picture');
+});
+{
+    const b = $('pipBtn');
+    if (b && !document.pictureInPictureEnabled && typeof video.webkitSetPresentationMode !== 'function') b.style.display = 'none';
+}`;
+const BANNER = `<div id="updateBanner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:10003;background:var(--bg-card,#181818);color:var(--text-main,#fff);border:1px solid var(--border,#333);border-left:4px solid var(--primary,#e50914);border-radius:8px;padding:12px 18px;box-shadow:0 10px 30px rgba(0,0,0,.5);align-items:center;gap:12px;font-weight:500;max-width:92vw">
+  🔄 Nouvelle version disponible
+  <button id="updateReloadBtn" style="background:var(--primary,#e50914);color:#fff;border:0;padding:8px 14px;border-radius:6px;font-weight:700;cursor:pointer">Recharger</button>
+  <button id="updateDismissBtn" style="background:none;border:0;color:var(--text-muted,#aaa);cursor:pointer;font-size:1rem" title="Plus tard">✕</button>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('sw.js');
+      const banner = document.getElementById('updateBanner');
+      let askedUpdate = false;
+      const show = () => { banner.style.display = 'flex'; };
+      if (reg.waiting && navigator.serviceWorker.controller) show();
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) show();
+        });
+      });
+      document.getElementById('updateReloadBtn').addEventListener('click', () => {
+        askedUpdate = true;
+        if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+        banner.style.display = 'none';
+      });
+      document.getElementById('updateDismissBtn').addEventListener('click', () => { banner.style.display = 'none'; });
+      navigator.serviceWorker.addEventListener('controllerchange', () => { if (askedUpdate) location.reload(); });
+      setInterval(() => reg.update().catch(() => {}), 3600000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+    } catch (e) { console.warn('SW :', e); }
+  });
+}
+<\/script>`;
+const NEW_PRECACHE = `const PRECACHE = [
+  './',
+  './index.html',
+  './style.css',
+  './app.js',
+  './videos.json',
+  './manifest.webmanifest',
+  './icons/icon-48.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/apple-touch-icon.png'
+];`;
+const MSG_LISTENER = `/* Message envoyé par la page : activer la nouvelle version */
+self.addEventListener('message', e => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+`;
+
+async function fetchText(name) {
+  for (const base of BASES) {
+    try {
+      const r = await fetch(base + name + '?t=' + Date.now(), { cache: 'no-cache' });
+      if (r.ok) return (await r.text()).split('\r\n').join('\n');
+    } catch (e) {}
+  }
+  throw new Error('Téléchargement impossible : ' + name + ' → utilise le mode manuel sous le journal.');
+}
+function extractMonolith(html0) {
+  let html = html0;
+  const s = html.indexOf('<style>');
+  const e = html.indexOf('</style>');
+  if (s === -1 || e === -1) throw new Error('Bloc <style> introuvable dans index.html.');
+  const css = html.slice(s + 7, e);
+  html = html.slice(0, s) + '<link rel="stylesheet" href="style.css">' + html.slice(e + 8);
+  let js = null, start = 0;
+  while (true) {
+    const a = html.indexOf('<script>', start);
+    if (a === -1) throw new Error('Grand script (const CONFIG) introuvable.');
+    const b = html.indexOf('<\/script>', a);
+    const body = html.slice(a + 8, b);
+    if (body.includes('const CONFIG')) {
+      js = body;
+      html = html.slice(0, a) + '<script src="app.js"><\/script>' + html.slice(b + 9);
+      break;
+    }
+    start = b + 9;
+  }
+  return { html, css, js };
+}
+function patchJs(js) {
+  if (!js.includes('function togglePiP')) {
+    if (js.split(B_ANCHOR).length !== 2) throw new Error('Ancre toggleCinemaMode introuvable — code modifié ?');
+    js = js.split(B_ANCHOR).join(B_ANCHOR + PIP_BLOCK);
+    log('✓ PiP ajouté (fonction + événements)');
+  } else log('• PiP déjà présent');
+  if (!js.includes("case 'KeyI'")) {
+    if (js.split(C_ANCHOR).length !== 2) throw new Error('Ancre raccourci KeyM introuvable.');
+    js = js.split(C_ANCHOR).join(C_INSERT + C_ANCHOR);
+    log('✓ Raccourci clavier I ajouté');
+  } else log('• Raccourci I déjà présent');
+  if (js.includes(D_OLD)) { js = js.split(D_OLD).join(D_NEW); log('✓ Mini-player suspendu pendant le PiP'); }
+  return js;
+}
+function patchHtml(html) {
+  if (!html.includes('pipBtn')) {
+    if (html.split(A_ANCHOR).length !== 2) throw new Error('Ancre bouton Caster introuvable.');
+    html = html.split(A_ANCHOR).join(A_ANCHOR + PIPBUTTON);
+    log('✓ Bouton 📌 PiP ajouté');
+  } else log('• Bouton PiP déjà présent');
+  if (!html.includes('updateBanner')) {
+    const k = html.indexOf(SW_MARK);
+    if (k === -1) throw new Error('Enregistrement du service worker introuvable.');
+    const s = html.lastIndexOf('<script>', k);
+    const e = html.indexOf('<\/script>', k) + 9;
+    html = html.slice(0, s) + BANNER + html.slice(e);
+    log('✓ Bandeau de mise à jour installé');
+  } else log('• Bandeau déjà présent');
+  return html;
+}
+function patchSw(sw) {
+  if (sw.includes('SKIP_WAITING') && sw.includes('rainbow-shell-v5')) { log('• sw.js déjà en v5'); return sw; }
+  sw = sw.split('rainbow-shell-v4').join('rainbow-shell-v5')
+         .split('rainbow-img-v4').join('rainbow-img-v5')
+         .split('Service Worker v4').join('Service Worker v5');
+  const s = sw.indexOf('const PRECACHE = [');
+  if (s === -1) throw new Error('PRECACHE introuvable dans sw.js');
+  const e = sw.indexOf('];', s) + 2;
+  sw = sw.slice(0, s) + NEW_PRECACHE + sw.slice(e);
+  const k = sw.indexOf(SKIP_LINE);
+  if (k !== -1) {
+    const ls = sw.lastIndexOf('\n', k);
+    sw = sw.slice(0, ls) + sw.slice(k + SKIP_LINE.length);
+  }
+  const i = sw.indexOf('/* ---------- Activation');
+  if (i === -1) throw new Error('Section Activation introuvable dans sw.js');
+  sw = sw.slice(0, i) + MSG_LISTENER + sw.slice(i);
+  log('✓ sw.js v5 (precache complet + MAJ à la demande)');
+  return sw;
+}
+function download(name) {
+  const blob = new Blob([outputs[name]], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function renderFiles() {
+  const box = $('files');
+  box.innerHTML = '';
+  ['index.html', 'style.css', 'app.js', 'sw.js'].forEach(name => {
+    const size = (new Blob([outputs[name]]).size / 1024).toFixed(1);
+    const card = document.createElement('div');
+    card.className = 'file-card';
+    const t = document.createElement('div');
+    t.className = 'file-name';
+    t.textContent = '📄 ' + name + ' — ' + size + ' Ko';
+    const dl = document.createElement('button');
+    dl.className = 'primary';
+    dl.textContent = '⬇️ Télécharger';
+    dl.addEventListener('click', () => download(name));
+    const cp = document.createElement('button');
+    cp.textContent = '📋 Copier';
+    cp.addEventListener('click', () => {
+      navigator.clipboard.writeText(outputs[name])
+        .then(() => log('📋 ' + name + ' copié dans le presse-papiers'))
+        .catch(() => log('❌ Copie impossible pour ' + name));
+    });
+    card.append(t, dl, cp);
+    box.appendChild(card);
+  });
+}
+async function run() {
+  $('goBtn').disabled = true;
+  $('log').textContent = '';
+  $('files').innerHTML = '';
+  setStatus('⏳ Travail en cours…');
+  try {
+    log('⏳ Récupération de index.html…');
+    let html = manual.index || await fetchText('index.html');
+    let js = null, css = null;
+    if (html.includes('src="app.js"') || html.includes("src='app.js'")) {
+      log('• Projet déjà découpé → récupération de app.js et style.css');
+      js = await fetchText('app.js');
+      css = await fetchText('style.css');
+    } else {
+      const x = extractMonolith(html);
+      html = x.html; css = x.css; js = x.js;
+      log('✓ Découpage : style.css et app.js extraits de index.html');
+    }
+    js = patchJs(js);
+    html = patchHtml(html);
+    log('⏳ Récupération de sw.js…');
+    const sw = patchSw(manual.sw || await fetchText('sw.js'));
+    const checks = [
+      ['index.html référence style.css', html.includes('href="style.css"')],
+      ['index.html référence app.js', html.includes('src="app.js"')],
+      ['bouton PiP présent', html.includes('id="pipBtn"')],
+      ['bandeau de mise à jour présent', html.includes('updateBanner')],
+      ['fonction togglePiP dans app.js', js.includes('function togglePiP')],
+      ['raccourci I dans app.js', js.includes("case 'KeyI'")],
+      ['sw.js en v5', sw.includes('rainbow-shell-v5')],
+      ['sw.js écoute SKIP_WAITING', sw.includes('SKIP_WAITING')],
+      ['precache style.css + app.js', sw.includes("'./style.css'") && sw.includes("'./app.js'")]
+    ];
+    let ok = true;
+    checks.forEach(c => { log((c[1] ? '✓ ' : '✗ ') + c[0]); ok = ok && c[1]; });
+    if (!ok) throw new Error("Vérifications incomplètes — n'uploade rien et montre-moi le journal.");
+    outputs['index.html'] = html;
+    outputs['style.css'] = css;
+    outputs['app.js'] = js;
+    outputs['sw.js'] = sw;
+    renderFiles();
+    $('dlAllBtn').disabled = false;
+    setStatus('✅ 4 fichiers prêts');
+    log('🎉 Terminé ! Télécharge les 4 fichiers et uploade-les ENSEMBLE sur GitHub (Add file → Upload files, un seul commit).');
+  } catch (e) {
+    log('❌ ' + e.message);
+    setStatus('Échec — voir le journal');
+    $('manualBox').hidden = false;
+  }
+  $('goBtn').disabled = false;
+}
+$('goBtn').addEventListener('click', run);
+$('dlAllBtn').addEventListener('click', () => {
+  Object.keys(outputs).forEach((n, i) => setTimeout(() => download(n), i * 600));
+  log('⬇️ Téléchargements lancés — si le navigateur bloque, clique les boutons un par un.');
+});
+$('manualGo').addEventListener('click', async () => {
+  const fi = $('manualIndex').files[0];
+  if (!fi) { log('❌ Choisis au moins le fichier index.html.'); return; }
+  manual.index = await fi.text();
+  const fs = $('manualSw').files[0];
+  manual.sw = fs ? await fs.text() : null;
+  $('manualBox').hidden = true;
+  run();
+});
+</script>
+</body>
+</html>
