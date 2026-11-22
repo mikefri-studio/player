@@ -1,0 +1,54 @@
+name: Vérification videos.json
+
+on:
+  push:
+    paths:
+      - 'videos.json'
+      - 'manifest.webmanifest'
+      - '.github/workflows/validate.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Valider videos.json et le manifest
+        run: |
+          python3 - <<'EOF'
+          import json, os, sys
+          errs = []
+          try:
+              data = json.load(open('videos.json', encoding='utf-8'))
+              if not isinstance(data, list):
+                  raise ValueError('videos.json doit être une liste [ ... ]')
+              seen = set()
+              for i, v in enumerate(data):
+                  t = str(v.get('titre', '')).strip()
+                  u = v.get('video', '')
+                  if not t:
+                      errs.append(f'entrée {i}: titre manquant')
+                  if not u.startswith('https://'):
+                      errs.append(f'entrée {i} ({t or "?"}): URL vidéo invalide -> {u!r} (https:// requis)')
+                  if u in seen:
+                      errs.append(f'entrée {i}: doublon d URL {u}')
+                  seen.add(u)
+                  g = v.get('vignette')
+                  if g and not g.startswith('https://'):
+                      errs.append(f'entrée {i}: URL vignette invalide -> {g!r}')
+              print(f'videos.json : {len(data)} entrée(s)')
+          except Exception as e:
+              errs.append(f'videos.json illisible : {e}')
+          try:
+              m = json.load(open('manifest.webmanifest', encoding='utf-8'))
+              for ic in m.get('icons', []):
+                  if not os.path.exists(ic['src']):
+                      errs.append(f'icône manquante : {ic["src"]}')
+              print('manifest : OK')
+          except Exception as e:
+              errs.append(f'manifest illisible : {e}')
+          if errs:
+              print('\n'.join('ERREUR: ' + e for e in errs))
+              sys.exit(1)
+          print('Tout est valide')
+          EOF
