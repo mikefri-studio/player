@@ -5,28 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rainbow Cinema — Éditeur de bibliothèque</title>
 <style>
-:root{--primary:#e50914;--bg:#0f0f0f;--card:#181818;--elev:#252525;--text:#fff;--muted:#aaa;--border:#333}
+:root{--primary:#e50914;--primary-glow:rgba(229,9,20,.4);--bg:#0f0f0f;--card:#181818;--elev:#252525;--text:#fff;--muted:#aaa;--border:#333;--ok:#4caf50;--warn:#ffb14a}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding:20px;max-width:1200px;margin:0 auto}
 h1{font-size:1.4rem;margin-bottom:6px}
 h2{font-size:1rem;margin:14px 0 10px}
-.sub{color:var(--muted);font-size:.9rem;margin-bottom:16px}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:16px;line-height:1.5}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:16px}
 .bar .count{color:var(--muted);font-size:.85rem;margin-left:auto}
-button{background:var(--elev);color:var(--text);border:1px solid var(--border);padding:9px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:.85rem}
+button{background:var(--elev);color:var(--text);border:1px solid var(--border);padding:9px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:.85rem;transition:filter .15s,transform .15s}
 button:hover{filter:brightness(1.25)}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.5;cursor:wait}
 button.primary{background:var(--primary);border-color:var(--primary);color:#fff}
 button.mini{padding:4px 8px;font-size:.8rem}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:860px){.cols{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
+.gh-card{border-color:var(--primary);box-shadow:0 0 24px rgba(229,9,20,.12)}
+.gh-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.gh-status{font-size:.8rem;color:var(--muted)}
+.gh-status.ok{color:var(--ok)}
 label{display:block;color:var(--muted);font-size:.85rem;margin:10px 0 4px}
-input[type=text],input[type=url],textarea{width:100%;background:var(--elev);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);outline:none;font-size:.9rem}
+input[type=text],input[type=url],input[type=password],textarea{width:100%;background:var(--elev);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);outline:none;font-size:.9rem}
 input:focus,textarea:focus{border-color:var(--primary)}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
-.row input{flex:1;min-width:180px}
+.row input{flex:1;min-width:140px}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 #msg{margin-top:10px;font-size:.85rem;min-height:1.2em}
-#msg.ok{color:#4caf50}#msg.err{color:#ff6b6b}
+#msg.ok{color:var(--ok)}#msg.err{color:#ff6b6b}
 #preview{display:none;width:100%;max-height:240px;margin-top:12px;border-radius:8px;background:#000}
 #thumbPreview{display:none;width:160px;aspect-ratio:16/9;object-fit:cover;margin-top:10px;border-radius:6px;border:1px solid var(--border)}
 .item{display:flex;gap:10px;align-items:center;background:var(--elev);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:8px}
@@ -34,17 +42,48 @@ input:focus,textarea:focus{border-color:var(--primary)}
 .item .meta{flex:1;min-width:0}
 .item .t{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item .u{color:var(--muted);font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.item .dup{color:#ffb14a;font-size:.72rem}
+.item .dup{color:var(--warn);font-size:.72rem}
 .item .acts{display:flex;gap:4px;flex-shrink:0}
 .file-btn{display:block;width:100%;text-align:left;margin-bottom:6px;font-weight:500}
 .file-btn small{color:var(--muted)}
 #pasteArea{margin-top:10px;min-height:120px;font-family:monospace;font-size:.8rem}
 .empty{color:var(--muted);text-align:center;padding:20px;font-size:.9rem}
+#list{max-height:60vh;overflow-y:auto}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--elev);border-radius:6px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:var(--primary)}
 </style>
 </head>
 <body>
 <h1>🎬 Rainbow Cinema — Éditeur de bibliothèque</h1>
-<p class="sub">1) Modifie la liste ici → 2) <b>Télécharge videos.json</b> → 3) Remplace le fichier sur GitHub (Add file → Upload files). Le brouillon est sauvegardé automatiquement dans ton navigateur.</p>
+<p class="sub">Modifie la liste, puis <b>💾 Enregistrer sur GitHub</b> : le fichier <code>videos.json</code> est commité directement, rien à re-uploader. (Le téléchargement reste dispo en secours.)</p>
+
+<div class="card gh-card">
+  <div class="gh-row">
+    <button id="ghSaveBtn" class="primary">💾 Enregistrer sur GitHub</button>
+    <button id="ghLoadBtn">🔄 Charger depuis GitHub</button>
+    <span id="ghStatus" class="gh-status">non connecté</span>
+    <button id="ghToggle" class="mini" style="margin-left:auto">🔑 Connexion</button>
+  </div>
+  <div id="ghPanel" hidden>
+    <label>Token GitHub — fine-grained, permission <b>Contents: Read and write</b> sur ce repo</label>
+    <div class="row">
+      <input type="password" id="ghToken" placeholder="github_pat_… ou ghp_…" autocomplete="off">
+      <button id="ghReveal" class="mini" title="Afficher/masquer">👁</button>
+      <button id="ghTestBtn">Tester</button>
+      <button id="ghForget" class="mini">Oublier</button>
+    </div>
+    <details>
+      <summary>Réglages avancés (repo / branche / fichier)</summary>
+      <div class="row">
+        <input type="text" id="ghOwner" title="owner"><input type="text" id="ghRepo" title="repo">
+        <input type="text" id="ghBranch" title="branche"><input type="text" id="ghPath" title="fichier">
+      </div>
+    </details>
+    <p class="sub" style="margin-top:10px">🔒 Le token reste dans ce navigateur (localStorage) et n'est envoyé qu'à <code>api.github.com</code>. Crée-le : github.com → Settings → Developer settings → <b>Fine-grained tokens</b> → Repository access : <code>mikefri-studio/player</code> → Permissions : <b>Contents = Read and write</b>.</p>
+  </div>
+</div>
 
 <div class="bar">
   <button id="loadRepoBtn">🔄 Charger depuis le site</button>
@@ -53,7 +92,7 @@ input:focus,textarea:focus{border-color:var(--primary)}
   <button id="pasteBtn">📋 Coller du JSON</button>
   <span class="count" id="count"></span>
   <button id="copyBtn">📋 Copier</button>
-  <button id="exportBtn" class="primary">⬇️ Télécharger videos.json</button>
+  <button id="exportBtn">⬇️ Télécharger</button>
 </div>
 <textarea id="pasteArea" hidden placeholder="Colle ici le contenu de videos.json puis clique Charger ce JSON"></textarea>
 <div class="row" id="pasteRow" hidden><button id="pasteLoadBtn" class="primary">Charger ce JSON</button></div>
@@ -65,10 +104,10 @@ input:focus,textarea:focus{border-color:var(--primary)}
     <input type="text" id="fTitre" placeholder="Mon film">
     <label>URL de la vidéo</label>
     <input type="url" id="fVideo" placeholder="https://archive.org/download/identifiant/film.mp4">
-    <label>URL de la vignette (optionnel — sinon générée automatiquement par le lecteur)</label>
+    <label>URL de la vignette (optionnel)</label>
     <input type="url" id="fVignette" placeholder="https://…/image.png">
     <div class="row">
-      <button id="autoBtn" title="Remplit titre + vignette depuis les métadonnées Archive.org">✨ Auto (Archive.org)</button>
+      <button id="autoBtn" title="Remplit titre + vignette depuis Archive.org">✨ Auto (Archive.org)</button>
       <button id="testBtn">▶ Tester</button>
       <button id="addBtn" class="primary">➕ Ajouter</button>
       <button id="cancelBtn" hidden>Annuler</button>
@@ -95,262 +134,182 @@ input:focus,textarea:focus{border-color:var(--primary)}
 'use strict';
 const $ = id => document.getElementById(id);
 const DRAFT = 'rc_admin_draft';
+const GH_KEY = 'rc_gh_cfg';
 const LIVE_JSON = 'https://mikefri-studio.github.io/player/videos.json';
 const PLACEHOLDER = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#252525"/><text x="8" y="6.5" font-size="5" text-anchor="middle">🎬</text></svg>');
 let videos = [];
 let editIndex = -1;
+let gh = Object.assign({ owner:'mikefri-studio', repo:'player', branch:'main', path:'videos.json', token:'', sha:null }, JSON.parse(localStorage.getItem(GH_KEY) || '{}'));
 
-function esc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-function msg(text, ok) {
-  const el = $('msg');
-  el.textContent = text;
-  el.className = ok ? 'ok' : 'err';
-}
-function normalizeUrl(u) {
-  return String(u || '').trim()
-    .replace(/^h+ttps:/i, 'https:')
-    .replace(/^ttps:/i, 'https:');
-}
-function stableUrl(u) {
-  const m = String(u).match(/\/(?:items|download)\/([^/?#]+)\/(.+)$/);
-  return m ? 'https://archive.org/download/' + m[1] + '/' + m[2] : String(u);
-}
-function itemId(u) {
-  const m = String(u).match(/\/(?:items|download|details|embed|metadata)\/([^/?#]+)/i);
-  if (m) return decodeURIComponent(m[1]);
-  const t = String(u).trim();
-  return /^[\w.-]+$/.test(t) ? t : null;
-}
-function fileUrl(id, name) {
-  return 'https://archive.org/download/' + encodeURIComponent(id) + '/' +
-    String(name).split('/').map(encodeURIComponent).join('/');
-}
-function formatSize(bytes) {
-  const n = parseInt(bytes, 10);
-  if (!isFinite(n) || n <= 0) return '?';
-  return n > 1e9 ? (n / 1e9).toFixed(2) + ' Go' : Math.round(n / 1e6) + ' Mo';
-}
-function validate(v) {
-  if (!v.titre || !v.titre.trim()) return 'Titre manquant.';
-  if (!/^https:\/\//i.test(v.video)) return 'URL vidéo invalide : https:// requis (http est bloqué sur GitHub Pages).';
-  if (v.vignette && !/^https:\/\//i.test(v.vignette)) return 'URL vignette invalide : https:// requis.';
-  try { new URL(v.video); } catch (e) { return 'URL vidéo mal formée.'; }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function msg(t, ok){ const el=$('msg'); el.textContent=t; el.className=ok?'ok':'err'; }
+function normalizeUrl(u){ return String(u||'').trim().replace(/^h+ttps:/i,'https:').replace(/^ttps:/i,'https:'); }
+function stableUrl(u){ const m=String(u).match(/\/(?:items|download)\/([^/?#]+)\/(.+)$/); return m?'https://archive.org/download/'+m[1]+'/'+m[2]:String(u); }
+function itemId(u){ const m=String(u).match(/\/(?:items|download|details|embed|metadata)\/([^/?#]+)/i); if(m) return decodeURIComponent(m[1]); const t=String(u).trim(); return /^[\w.-]+$/.test(t)?t:null; }
+function fileUrl(id,name){ return 'https://archive.org/download/'+encodeURIComponent(id)+'/'+String(name).split('/').map(encodeURIComponent).join('/'); }
+function formatSize(b){ const n=parseInt(b,10); if(!isFinite(n)||n<=0) return '?'; return n>1e9?(n/1e9).toFixed(2)+' Go':Math.round(n/1e6)+' Mo'; }
+function validate(v){
+  if(!v.titre||!v.titre.trim()) return 'Titre manquant.';
+  if(!/^https:\/\//i.test(v.video)) return 'URL vidéo invalide : https:// requis.';
+  if(v.vignette && !/^https:\/\//i.test(v.vignette)) return 'URL vignette invalide : https:// requis.';
+  try{ new URL(v.video); }catch(e){ return 'URL vidéo mal formée.'; }
   return null;
 }
-function findDuplicate(url, exclude) {
-  const s = stableUrl(url);
-  return videos.findIndex((v, i) => i !== exclude && stableUrl(v.video) === s);
-}
+function findDuplicate(url,exclude){ const s=stableUrl(url); return videos.findIndex((v,i)=>i!==exclude&&stableUrl(v.video)===s); }
+function exportJson(){ return JSON.stringify(videos,null,2); }
 
-function render() {
-  const q = $('filter').value.trim().toLowerCase();
-  const list = $('list');
-  $('n').textContent = videos.length;
-  $('count').textContent = videos.length + ' vidéo(s) — brouillon auto-sauvegardé';
-  if (!videos.length) { list.innerHTML = '<div class="empty">Aucune vidéo. Ajoute-en une ou charge le fichier existant.</div>'; return; }
-  list.innerHTML = videos.map((v, i) => {
-    if (q && !v.titre.toLowerCase().includes(q)) return '';
-    const dup = findDuplicate(v.video, i) !== -1;
-    const thumb = v.vignette ? esc(v.vignette) : PLACEHOLDER;
-    return '<div class="item">' +
-      '<img src="' + thumb + '" loading="lazy" alt="">' +
-      '<div class="meta"><div class="t">' + esc(v.titre) + '</div>' +
-      '<div class="u">' + esc(v.video) + '</div>' +
-      (dup ? '<div class="dup">⚠️ doublon d\'URL</div>' : '') + '</div>' +
-      '<div class="acts">' +
-      '<button class="mini" data-act="up" data-i="' + i + '" title="Monter">↑</button>' +
-      '<button class="mini" data-act="down" data-i="' + i + '" title="Descendre">↓</button>' +
-      '<button class="mini" data-act="edit" data-i="' + i + '" title="Modifier">✏️</button>' +
-      '<button class="mini" data-act="del" data-i="' + i + '" title="Supprimer">🗑️</button>' +
-      '</div></div>';
+function render(){
+  const q=$('filter').value.trim().toLowerCase(); const list=$('list');
+  $('n').textContent=videos.length; $('count').textContent=videos.length+' vidéo(s) — brouillon auto-sauvegardé';
+  if(!videos.length){ list.innerHTML='<div class="empty">Aucune vidéo. Ajoute-en une ou charge le fichier existant.</div>'; return; }
+  list.innerHTML=videos.map((v,i)=>{
+    if(q&&!v.titre.toLowerCase().includes(q)) return '';
+    const dup=findDuplicate(v.video,i)!==-1; const thumb=v.vignette?esc(v.vignette):PLACEHOLDER;
+    return '<div class="item"><img src="'+thumb+'" loading="lazy" alt=""><div class="meta"><div class="t">'+esc(v.titre)+'</div><div class="u">'+esc(v.video)+'</div>'+(dup?'<div class="dup">⚠️ doublon d\'URL</div>':'')+'</div><div class="acts"><button class="mini" data-act="up" data-i="'+i+'" title="Monter">↑</button><button class="mini" data-act="down" data-i="'+i+'" title="Descendre">↓</button><button class="mini" data-act="edit" data-i="'+i+'" title="Modifier">✏️</button><button class="mini" data-act="del" data-i="'+i+'" title="Supprimer">🗑️</button></div></div>';
   }).join('');
 }
-function save() {
-  localStorage.setItem(DRAFT, JSON.stringify(videos));
-  render();
-}
-$('list').addEventListener('click', e => {
-  const b = e.target.closest('button[data-act]');
-  if (!b) return;
-  const i = parseInt(b.dataset.i, 10);
-  const act = b.dataset.act;
-  if (act === 'del') { videos.splice(i, 1); if (editIndex === i) resetForm(); save(); }
-  if (act === 'up' && i > 0) { const t = videos[i - 1]; videos[i - 1] = videos[i]; videos[i] = t; save(); }
-  if (act === 'down' && i < videos.length - 1) { const t = videos[i + 1]; videos[i + 1] = videos[i]; videos[i] = t; save(); }
-  if (act === 'edit') {
-    editIndex = i;
-    $('fTitre').value = videos[i].titre;
-    $('fVideo').value = videos[i].video;
-    $('fVignette').value = videos[i].vignette || '';
-    $('formTitle').textContent = '✏️ Modifier la vidéo #' + (i + 1);
-    $('addBtn').textContent = '💾 Mettre à jour';
-    $('cancelBtn').hidden = false;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+function save(){ localStorage.setItem(DRAFT,JSON.stringify(videos)); render(); }
+$('list').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]'); if(!b) return;
+  const i=parseInt(b.dataset.i,10); const act=b.dataset.act;
+  if(act==='del'){ videos.splice(i,1); if(editIndex===i) resetForm(); save(); }
+  if(act==='up'&&i>0){ const t=videos[i-1]; videos[i-1]=videos[i]; videos[i]=t; save(); }
+  if(act==='down'&&i<videos.length-1){ const t=videos[i+1]; videos[i+1]=videos[i]; videos[i]=t; save(); }
+  if(act==='edit'){ editIndex=i; $('fTitre').value=videos[i].titre; $('fVideo').value=videos[i].video; $('fVignette').value=videos[i].vignette||''; $('formTitle').textContent='✏️ Modifier la vidéo #'+(i+1); $('addBtn').textContent='💾 Mettre à jour'; $('cancelBtn').hidden=false; window.scrollTo({top:0,behavior:'smooth'}); }
 });
-$('list').addEventListener('error', e => {
-  const img = e.target;
-  if (img.tagName === 'IMG' && !img.dataset.fallback) { img.dataset.fallback = '1'; img.src = PLACEHOLDER; }
-}, true);
-$('filter').addEventListener('input', render);
+$('list').addEventListener('error',e=>{ const img=e.target; if(img.tagName==='IMG'&&!img.dataset.fallback){ img.dataset.fallback='1'; img.src=PLACEHOLDER; } },true);
+$('filter').addEventListener('input',render);
 
-function readForm() {
-  return {
-    titre: $('fTitre').value.trim(),
-    video: normalizeUrl($('fVideo').value),
-    vignette: normalizeUrl($('fVignette').value) || undefined
-  };
-}
-function resetForm() {
-  editIndex = -1;
-  $('fTitre').value = ''; $('fVideo').value = ''; $('fVignette').value = '';
-  $('formTitle').textContent = '➕ Ajouter une vidéo';
-  $('addBtn').textContent = '➕ Ajouter';
-  $('cancelBtn').hidden = true;
-  $('preview').style.display = 'none';
-  $('thumbPreview').style.display = 'none';
-}
-$('cancelBtn').addEventListener('click', resetForm);
-$('addBtn').addEventListener('click', () => {
-  const v = readForm();
-  const err = validate(v);
-  if (err) { msg('❌ ' + err); return; }
-  const dup = findDuplicate(v.video, editIndex);
-  if (dup !== -1) { msg('❌ Cette URL existe déjà (entrée #' + (dup + 1) + ').'); return; }
-  if (!v.vignette) delete v.vignette;
-  if (editIndex === -1) { videos.push(v); msg('✅ Ajoutée. Pense à télécharger videos.json.', true); }
-  else { videos[editIndex] = v; msg('✅ Mise à jour. Pense à télécharger videos.json.', true); }
+function readForm(){ return { titre:$('fTitre').value.trim(), video:normalizeUrl($('fVideo').value), vignette:normalizeUrl($('fVignette').value)||undefined }; }
+function resetForm(){ editIndex=-1; $('fTitre').value=''; $('fVideo').value=''; $('fVignette').value=''; $('formTitle').textContent='➕ Ajouter une vidéo'; $('addBtn').textContent='➕ Ajouter'; $('cancelBtn').hidden=true; $('preview').style.display='none'; $('thumbPreview').style.display='none'; }
+$('cancelBtn').addEventListener('click',resetForm);
+$('addBtn').addEventListener('click',()=>{
+  const v=readForm(); const err=validate(v); if(err){ msg('❌ '+err); return; }
+  const dup=findDuplicate(v.video,editIndex); if(dup!==-1){ msg('❌ Cette URL existe déjà (entrée #'+(dup+1)+').'); return; }
+  if(!v.vignette) delete v.vignette;
+  if(editIndex===-1){ videos.push(v); msg('✅ Ajoutée. Clique « Enregistrer sur GitHub ».',true); } else { videos[editIndex]=v; msg('✅ Mise à jour. Clique « Enregistrer sur GitHub ».',true); }
   save(); resetForm();
 });
-$('testBtn').addEventListener('click', () => {
-  const v = readForm();
-  if (!/^https:\/\//i.test(v.video)) { msg('❌ Mets d\'abord une URL vidéo valide.'); return; }
-  const p = $('preview');
-  p.src = stableUrl(v.video);
-  p.style.display = 'block';
-  p.play().catch(() => {});
-  if (v.vignette) { const t = $('thumbPreview'); t.src = v.vignette; t.style.display = 'block'; }
-  msg('▶ Test lancé — si rien ne se charge, l\'URL est probablement morte.', true);
+$('testBtn').addEventListener('click',()=>{
+  const v=readForm(); if(!/^https:\/\//i.test(v.video)){ msg('❌ Mets d\'abord une URL vidéo valide.'); return; }
+  const p=$('preview'); p.src=stableUrl(v.video); p.style.display='block'; p.play().catch(()=>{});
+  if(v.vignette){ const t=$('thumbPreview'); t.src=v.vignette; t.style.display='block'; }
+  msg('▶ Test lancé — si rien ne se charge, l\'URL est probablement morte.',true);
 });
 
-async function fetchMeta(id) {
-  const res = await fetch('https://archive.org/metadata/' + encodeURIComponent(id));
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
-}
-function thumbFor(meta, id) {
-  const files = meta.files || [];
-  if (files.some(f => f.name === '__ia_thumb.jpg')) return fileUrl(id, '__ia_thumb.jpg');
-  return 'https://archive.org/services/img/' + encodeURIComponent(id);
-}
-$('autoBtn').addEventListener('click', async () => {
-  const id = itemId($('fVideo').value);
-  if (!id) { msg('❌ Impossible de trouver un identifiant Archive.org dans cette URL.'); return; }
-  msg('⏳ Recherche des métadonnées…', true);
-  try {
-    const meta = await fetchMeta(id);
-    if (!$('fTitre').value.trim()) $('fTitre').value = (meta.metadata && meta.metadata.title) || id;
-    if (!$('fVignette').value.trim()) $('fVignette').value = thumbFor(meta, id);
-    $('fVideo').value = stableUrl(normalizeUrl($('fVideo').value));
-    msg('✅ Métadonnées récupérées.', true);
-  } catch (e) { msg('❌ Métadonnées introuvables : ' + e.message); }
+async function fetchMeta(id){ const res=await fetch('https://archive.org/metadata/'+encodeURIComponent(id)); if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); }
+function thumbFor(meta,id){ const files=meta.files||[]; if(files.some(f=>f.name==='__ia_thumb.jpg')) return fileUrl(id,'__ia_thumb.jpg'); return 'https://archive.org/services/img/'+encodeURIComponent(id); }
+$('autoBtn').addEventListener('click',async()=>{
+  const id=itemId($('fVideo').value); if(!id){ msg('❌ Impossible de trouver un identifiant Archive.org dans cette URL.'); return; }
+  msg('⏳ Recherche des métadonnées…',true);
+  try{ const meta=await fetchMeta(id); if(!$('fTitre').value.trim()) $('fTitre').value=(meta.metadata&&meta.metadata.title)||id; if(!$('fVignette').value.trim()) $('fVignette').value=thumbFor(meta,id); $('fVideo').value=stableUrl(normalizeUrl($('fVideo').value)); msg('✅ Métadonnées récupérées.',true); }
+  catch(e){ msg('❌ Métadonnées introuvables : '+e.message); }
 });
-$('itemBtn').addEventListener('click', async () => {
-  const id = itemId($('itemInput').value);
-  const box = $('itemFiles');
-  box.innerHTML = '';
-  if (!id) { box.innerHTML = '<div class="empty">Identifiant ou URL invalide.</div>'; return; }
-  box.innerHTML = '<div class="empty">⏳ Chargement…</div>';
-  try {
-    const meta = await fetchMeta(id);
-    const vids = (meta.files || []).filter(f => /\.(mp4|m4v|webm|ogv|mov)$/i.test(f.name || ''));
-    if (!vids.length) { box.innerHTML = '<div class="empty">Aucun fichier vidéo dans cet item.</div>'; return; }
-    vids.sort((a, b) => (parseInt(b.size, 10) || 0) - (parseInt(a.size, 10) || 0));
-    const title = (meta.metadata && meta.metadata.title) || id;
-    box.innerHTML = vids.map((f, i) =>
-      '<button class="file-btn" data-f="' + i + '">🎬 ' + esc(f.name) +
-      ' <small>(' + formatSize(f.size) + (f.format ? ' · ' + esc(f.format) : '') + ')</small></button>').join('');
-    box.querySelectorAll('button[data-f]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const f = vids[parseInt(btn.dataset.f, 10)];
-        $('fVideo').value = fileUrl(id, f.name);
-        $('fTitre').value = vids.length > 1 ? title + ' — ' + f.name.replace(/\.[^.]+$/, '') : title;
-        $('fVignette').value = thumbFor(meta, id);
-        msg('✅ Formulaire rempli — vérifie puis clique « Ajouter ».', true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+$('itemBtn').addEventListener('click',async()=>{
+  const id=itemId($('itemInput').value); const box=$('itemFiles'); box.innerHTML='';
+  if(!id){ box.innerHTML='<div class="empty">Identifiant ou URL invalide.</div>'; return; }
+  box.innerHTML='<div class="empty">⏳ Chargement…</div>';
+  try{
+    const meta=await fetchMeta(id);
+    const vids=(meta.files||[]).filter(f=>/\.(mp4|m4v|webm|ogv|mov)$/i.test(f.name||''));
+    if(!vids.length){ box.innerHTML='<div class="empty">Aucun fichier vidéo dans cet item.</div>'; return; }
+    vids.sort((a,b)=>(parseInt(b.size,10)||0)-(parseInt(a.size,10)||0));
+    const title=(meta.metadata&&meta.metadata.title)||id;
+    box.innerHTML=vids.map((f,i)=>'<button class="file-btn" data-f="'+i+'">🎬 '+esc(f.name)+' <small>('+formatSize(f.size)+(f.format?' · '+esc(f.format):'')+')</small></button>').join('');
+    box.querySelectorAll('button[data-f]').forEach(btn=>{
+      btn.addEventListener('click',()=>{ const f=vids[parseInt(btn.dataset.f,10)]; $('fVideo').value=fileUrl(id,f.name); $('fTitre').value=vids.length>1?title+' — '+f.name.replace(/\.[^.]+$/,''):title; $('fVignette').value=thumbFor(meta,id); msg('✅ Formulaire rempli — vérifie puis clique « Ajouter ».',true); window.scrollTo({top:0,behavior:'smooth'}); });
     });
-  } catch (e) { box.innerHTML = '<div class="empty">❌ ' + esc(e.message) + '</div>'; }
+  }catch(e){ box.innerHTML='<div class="empty">❌ '+esc(e.message)+'</div>'; }
 });
 
-function loadList(list, source) {
-  if (!Array.isArray(list)) { msg('❌ Le JSON doit être une liste [ … ].'); return; }
-  videos = list.filter(v => v && v.video).map(v => ({
-    titre: String(v.titre || v.video.split('/').pop()),
-    video: normalizeUrl(v.video),
-    vignette: v.vignette ? normalizeUrl(v.vignette) : undefined
-  }));
-  save(); resetForm();
-  msg('✅ ' + videos.length + ' vidéo(s) chargée(s) (' + source + ').', true);
+function loadList(list,source){
+  if(!Array.isArray(list)){ msg('❌ Le JSON doit être une liste [ … ].'); return; }
+  videos=list.filter(v=>v&&v.video).map(v=>({ titre:String(v.titre||v.video.split('/').pop()), video:normalizeUrl(v.video), vignette:v.vignette?normalizeUrl(v.vignette):undefined }));
+  save(); resetForm(); msg('✅ '+videos.length+' vidéo(s) chargée(s) ('+source+').',true);
 }
-async function loadFromSite() {
-  msg('⏳ Chargement de videos.json…', true);
-  try {
-    const res = await fetch('videos.json', { cache: 'no-cache' });
-    if (!res.ok) throw new Error('local HTTP ' + res.status);
-    loadList(await res.json(), 'site');
-  } catch (e) {
-    try {
-      const res = await fetch(LIVE_JSON, { cache: 'no-cache' });
-      loadList(await res.json(), 'site en ligne');
-    } catch (e2) { msg('❌ Chargement impossible — utilise « Importer un fichier ».'); }
-  }
+async function loadFromSite(){
+  msg('⏳ Chargement de videos.json…',true);
+  try{ const res=await fetch('videos.json',{cache:'no-cache'}); if(!res.ok) throw new Error('local HTTP '+res.status); loadList(await res.json(),'site'); }
+  catch(e){ try{ const res=await fetch(LIVE_JSON,{cache:'no-cache'}); loadList(await res.json(),'site en ligne'); }catch(e2){ msg('❌ Chargement impossible — utilise « Importer un fichier ».'); } }
 }
-$('loadRepoBtn').addEventListener('click', loadFromSite);
-$('importBtn').addEventListener('click', () => $('importFile').click());
-$('importFile').addEventListener('change', e => {
-  const f = e.target.files[0];
-  if (!f) return;
-  const r = new FileReader();
-  r.onload = () => { try { loadList(JSON.parse(r.result), 'fichier'); } catch (err) { msg('❌ JSON invalide : ' + err.message); } };
-  r.readAsText(f);
+$('loadRepoBtn').addEventListener('click',loadFromSite);
+$('importBtn').addEventListener('click',()=>$('importFile').click());
+$('importFile').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ loadList(JSON.parse(r.result),'fichier'); }catch(err){ msg('❌ JSON invalide : '+err.message); } }; r.readAsText(f); });
+$('pasteBtn').addEventListener('click',()=>{ $('pasteArea').hidden=!$('pasteArea').hidden; $('pasteRow').hidden=$('pasteArea').hidden; });
+$('pasteLoadBtn').addEventListener('click',()=>{ try{ loadList(JSON.parse($('pasteArea').value),'collage'); $('pasteArea').hidden=true; $('pasteRow').hidden=true; }catch(err){ msg('❌ JSON invalide : '+err.message); } });
+$('exportBtn').addEventListener('click',()=>{
+  if(!videos.length){ msg('❌ La liste est vide.'); return; }
+  const errs=videos.map(validate); const bad=errs.findIndex(x=>x); if(bad!==-1){ msg('❌ Entrée #'+(bad+1)+' invalide : '+errs[bad]); return; }
+  const blob=new Blob([exportJson()],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='videos.json'; a.click();
+  msg('✅ Fichier téléchargé (secours).',true);
 });
-$('pasteBtn').addEventListener('click', () => {
-  $('pasteArea').hidden = !$('pasteArea').hidden;
-  $('pasteRow').hidden = $('pasteArea').hidden;
-});
-$('pasteLoadBtn').addEventListener('click', () => {
-  try { loadList(JSON.parse($('pasteArea').value), 'collage'); $('pasteArea').hidden = true; $('pasteRow').hidden = true; }
-  catch (err) { msg('❌ JSON invalide : ' + err.message); }
-});
-function exportJson() { return JSON.stringify(videos, null, 2); }
-$('exportBtn').addEventListener('click', () => {
-  if (!videos.length) { msg('❌ La liste est vide.'); return; }
-  const errs = videos.map(validate);
-  const bad = errs.findIndex(x => x);
-  if (bad !== -1) { msg('❌ Entrée #' + (bad + 1) + ' invalide : ' + errs[bad]); return; }
-  const blob = new Blob([exportJson()], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'videos.json';
-  a.click();
-  msg('✅ Fichier téléchargé — remplace-le sur GitHub (Add file → Upload files).', true);
-});
-$('copyBtn').addEventListener('click', () => {
-  navigator.clipboard.writeText(exportJson())
-    .then(() => msg('✅ JSON copié dans le presse-papiers.', true))
-    .catch(() => msg('❌ Copie impossible — utilise le téléchargement.'));
-});
+$('copyBtn').addEventListener('click',()=>{ navigator.clipboard.writeText(exportJson()).then(()=>msg('✅ JSON copié.',true)).catch(()=>msg('❌ Copie impossible.')); });
 
-const draft = localStorage.getItem(DRAFT);
-if (draft) {
-  try { loadList(JSON.parse(draft), 'brouillon local'); } catch (e) { loadFromSite(); }
-} else {
-  loadFromSite();
+/* ---------- Sync GitHub (API Contents) ---------- */
+function utf8ToBase64(str){ const bytes=new TextEncoder().encode(str); let bin=''; for(let i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]); return btoa(bin); }
+function base64ToUtf8(b64){ const bin=atob(String(b64).replace(/\n/g,'')); const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0)); return new TextDecoder().decode(bytes); }
+function ghPersist(){ localStorage.setItem(GH_KEY,JSON.stringify({owner:gh.owner,repo:gh.repo,branch:gh.branch,path:gh.path,token:gh.token})); }
+function ghHeaders(){ return { 'Authorization':'Bearer '+gh.token, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28', 'Content-Type':'application/json' }; }
+function apiUrl(){ return 'https://api.github.com/repos/'+gh.owner+'/'+gh.repo+'/contents/'+gh.path.split('/').map(encodeURIComponent).join('/'); }
+function ghStatusUpdate(){ const el=$('ghStatus'); el.textContent=gh.token?'🔑 token présent':'non connecté'; el.className='gh-status'+(gh.token?' ok':''); }
+function setBusy(b){ const btn=$('ghSaveBtn'); btn.disabled=b; btn.textContent=b?'⏳ Enregistrement…':'💾 Enregistrer sur GitHub'; }
+function openGh(){ $('ghPanel').hidden=false; $('ghToken').focus(); }
+async function ghFetchSha(){
+  const r=await fetch(apiUrl()+'?ref='+encodeURIComponent(gh.branch),{headers:ghHeaders(),cache:'no-cache'});
+  if(r.status===404){ gh.sha=null; return null; }
+  if(!r.ok) throw new Error('GitHub GET '+r.status+' — '+((await r.text()).slice(0,120)));
+  const j=await r.json(); gh.sha=j.sha; return j;
 }
+async function ghSave(){
+  if(!videos.length){ msg('❌ La liste est vide.'); return; }
+  const errs=videos.map(validate); const bad=errs.findIndex(x=>x); if(bad!==-1){ msg('❌ Entrée #'+(bad+1)+' : '+errs[bad]); return; }
+  if(!gh.token){ msg('❌ Renseigne ton token GitHub (panneau 🔑).'); openGh(); return; }
+  setBusy(true); msg('⏳ Enregistrement sur GitHub…',true);
+  try{
+    await ghFetchSha();
+    const body={ message:'admin: videos.json ('+videos.length+' vidéos)', content:utf8ToBase64(exportJson()), branch:gh.branch };
+    if(gh.sha) body.sha=gh.sha;
+    let r=await fetch(apiUrl(),{method:'PUT',headers:ghHeaders(),body:JSON.stringify(body)});
+    if(r.status===409||r.status===422){ await ghFetchSha(); body.sha=gh.sha; r=await fetch(apiUrl(),{method:'PUT',headers:ghHeaders(),body:JSON.stringify(body)}); }
+    if(!r.ok){
+      if(r.status===401||r.status===403) throw new Error('Token refusé ('+r.status+'). Vérifie Contents: Read and write sur ce repo.');
+      throw new Error('GitHub PUT '+r.status+' — '+((await r.text()).slice(0,140)));
+    }
+    const j=await r.json(); gh.sha=j.content&&j.content.sha;
+    localStorage.setItem(DRAFT,JSON.stringify(videos));
+    msg('✅ Enregistré sur GitHub ! Pages se redéploie (~1 min). Commit '+(j.commit&&j.commit.sha?j.commit.sha.slice(0,7):'ok')+'.',true);
+  }catch(e){ msg('❌ '+e.message); }
+  setBusy(false);
+}
+async function loadFromGitHub(){
+  if(!gh.token){ msg('❌ Token requis pour charger depuis GitHub.'); openGh(); return; }
+  msg('⏳ Chargement depuis GitHub…',true);
+  try{ const j=await ghFetchSha(); if(!j){ msg('❌ videos.json introuvable sur GitHub.'); return; } loadList(JSON.parse(base64ToUtf8(j.content)),'GitHub'); }
+  catch(e){ msg('❌ '+e.message); }
+}
+async function ghTest(){
+  if(!gh.token){ msg('❌ Colle d\'abord un token.'); return; }
+  msg('⏳ Test de connexion…',true);
+  try{
+    const r=await fetch('https://api.github.com/repos/'+gh.owner+'/'+gh.repo,{headers:ghHeaders(),cache:'no-cache'});
+    if(r.ok) msg('✅ Connecté à '+gh.owner+'/'+gh.repo+'. Tu peux enregistrer.',true);
+    else if(r.status===401||r.status===403) msg('❌ Token invalide ou droits insuffisants (Contents: Read and write).');
+    else msg('❌ Repo introuvable ou inaccessible ('+r.status+').');
+  }catch(e){ msg('❌ Réseau : '+e.message); }
+}
+$('ghSaveBtn').addEventListener('click',ghSave);
+$('ghLoadBtn').addEventListener('click',loadFromGitHub);
+$('ghToggle').addEventListener('click',()=>{ $('ghPanel').hidden=!$('ghPanel').hidden; });
+$('ghReveal').addEventListener('click',()=>{ const i=$('ghToken'); i.type=i.type==='password'?'text':'password'; });
+$('ghTestBtn').addEventListener('click',ghTest);
+$('ghForget').addEventListener('click',()=>{ gh.token=''; $('ghToken').value=''; ghPersist(); ghStatusUpdate(); msg('Token oublié.',true); });
+$('ghToken').addEventListener('input',()=>{ gh.token=$('ghToken').value.trim(); ghPersist(); ghStatusUpdate(); });
+['ghOwner','ghRepo','ghBranch','ghPath'].forEach(id=>{ $(id).addEventListener('change',()=>{ gh[id.slice(2).toLowerCase()]=$(id).value.trim(); ghPersist(); }); });
+
+/* ---------- Démarrage ---------- */
+$('ghToken').value=gh.token; $('ghOwner').value=gh.owner; $('ghRepo').value=gh.repo; $('ghBranch').value=gh.branch; $('ghPath').value=gh.path; ghStatusUpdate();
+const draft=localStorage.getItem(DRAFT);
+if(draft){ try{ loadList(JSON.parse(draft),'brouillon local'); }catch(e){ loadFromSite(); } } else { loadFromSite(); }
 </script>
 </body>
 </html>
