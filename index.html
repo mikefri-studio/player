@@ -200,5 +200,63 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+    <!-- 🛠 Raccourci admin discret — à coller juste avant </body> dans index.html -->
+<style>
+.rc-admin-shortcut{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:6px;cursor:pointer;
+  background:transparent;border:1px solid var(--border,#333);
+  color:var(--text-muted,#aaa);font-size:1rem;line-height:1;
+  opacity:.45;transition:opacity .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s;
+}
+.rc-admin-shortcut:hover,.rc-admin-shortcut:focus-visible{
+  opacity:1;color:var(--primary,#e50914);border-color:var(--primary,#e50914);
+  box-shadow:0 0 12px var(--primary-glow,rgba(229,9,20,.4));transform:translateY(-1px);outline:none;
+}
+@media (prefers-reduced-motion: reduce){
+  .rc-admin-shortcut{transition:none}
+  .rc-admin-shortcut:hover,.rc-admin-shortcut:focus-visible{transform:none}
+}
+</style>
+<script>
+(function(){
+  if (document.getElementById('rcAdminShortcut')) return; // pas de doublon si relancé
+  function openAdmin(){
+    var url = new URL('admin.html', location.href).href; // marche même avec ?v=… dans l'URL
+    window.open(url, '_blank', 'noopener');
+    if (typeof showToast === 'function') showToast('🛠 Administration ouverte');
+  }
+  function mount(){
+    var btn = document.createElement('button');
+    btn.id = 'rcAdminShortcut';
+    btn.className = 'rc-admin-shortcut';
+    btn.type = 'button';
+    btn.textContent = '🛠';
+    btn.title = 'Administration (Ctrl+Alt+A)';
+    btn.setAttribute('aria-label', "Ouvrir l'administration");
+    btn.addEventListener('click', openAdmin);
+    var bar = document.querySelector('.top-bar');
+    var group = bar && bar.querySelector('div');
+    if (group) group.appendChild(btn);          // à côté de 🌓 Thème / ⚙️ Paramètres
+    else if (bar) bar.appendChild(btn);
+    else {                                       // secours : coin haut-droit
+      btn.style.position = 'fixed';
+      btn.style.top = '14px';
+      btn.style.right = '14px';
+      btn.style.zIndex = '10004';
+      btn.style.background = 'var(--bg-card,#181818)';
+      document.body.appendChild(btn);
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
+  else mount();
+  document.addEventListener('keydown', function(e){
+    if ((e.ctrlKey || e.metaKey) && e.altKey && (e.key === 'a' || e.key === 'A')){
+      e.preventDefault();
+      openAdmin();
+    }
+  });
+})();
+</script>
 </body>
 </html>
